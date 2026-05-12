@@ -1,0 +1,84 @@
+workflow:
+  name: scrna_qc_scvi_demo
+  description: Run synthetic scRNA QC and pass filtered AnnData into SCVI.
+  outdir: ./results/workflows/scrna_qc_scvi
+  stop_on_failure: true
+  execution:
+    mode: command_and_run
+    approved: true
+    force: true
+  stages:
+    - name: scrna_qc
+      spec:
+        run:
+          name: workflow_scrna_qc
+          description: QC synthetic single-cell RNA-seq data.
+          type: scrna_qc
+          skill: single-cell-rna-qc
+        inputs:
+          path: ./examples/workflows/synthetic_qc.h5ad
+          type: h5ad
+          synthetic: true
+          species: human
+        scrna_qc:
+          preserve_raw_counts: true
+          counts_layer: counts
+          batch_key: batch
+          filter:
+            mode: mad
+            n_mads_counts: 5
+            n_mads_genes: 5
+            n_mads_mito: 3
+            max_pct_mito: 20
+            min_cells_per_gene: 1
+          gene_patterns:
+            mt: "^MT-"
+            ribo: "^RP[SL]"
+            hb: "^HB[^(P)]"
+          optional_checks:
+            doublet_detection: true
+            ambient_rna: true
+        execution:
+          mode: command_and_run
+          approved: true
+          force: true
+        outputs:
+          outdir: ./results/workflows/scrna_qc_scvi/scrna_qc
+          report: ./results/workflows/scrna_qc_scvi/scrna_qc/report.md
+          manifest: ./results/workflows/scrna_qc_scvi/scrna_qc/run_manifest.json
+    - name: scvi
+      connect_from:
+        stage: scrna_qc
+        output: filtered_h5ad
+      spec:
+        run:
+          name: workflow_scvi
+          description: Train SCVI on QC-filtered synthetic data.
+          type: scvi_model
+          skill: scvi-universal
+        inputs:
+          path: ""
+          type: h5ad
+        scvi:
+          model: SCVI
+          setup_anndata:
+            layer: counts
+            batch_key: batch
+          model_kwargs:
+            n_latent: 5
+          train:
+            max_epochs: 2
+          downstream:
+            latent_key: X_scvi
+            neighbors: true
+            umap: true
+            leiden: true
+            normalized_expression: true
+        execution:
+          mode: command_and_run
+          approved: true
+          force: true
+        outputs:
+          outdir: ./results/workflows/scrna_qc_scvi/scvi
+          report: ./results/workflows/scrna_qc_scvi/scvi/report.md
+          manifest: ./results/workflows/scrna_qc_scvi/scvi/run_manifest.json

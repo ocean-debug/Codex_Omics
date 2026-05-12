@@ -1,0 +1,4 @@
+interface:
+  display_name: "Omics Router"
+  short_description: "Route omics requests into structured run specs."
+  default_prompt: "Route my omics analysis request."

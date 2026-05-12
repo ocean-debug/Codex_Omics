@@ -1,0 +1,11 @@
+name: codex-omics-scverse
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - scanpy
+  - anndata
+  - pip
+  - pip:
+      - -e .[dev,scverse]

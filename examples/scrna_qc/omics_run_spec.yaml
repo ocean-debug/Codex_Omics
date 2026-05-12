@@ -1,0 +1,31 @@
+run:
+  name: scrna_qc_demo
+  description: Run single-cell RNA-seq QC on a small AnnData file.
+  type: scrna_qc
+  skill: single-cell-rna-qc
+inputs:
+  path: ./examples/scrna_qc/synthetic.h5ad
+  type: h5ad
+  species: human
+  synthetic: true
+scrna_qc:
+  preserve_raw_counts: true
+  counts_layer: counts
+  filter:
+    mode: mad
+    n_mads_counts: 5
+    n_mads_genes: 5
+    n_mads_mito: 3
+    max_pct_mito: 20
+    min_cells_per_gene: 1
+  gene_patterns:
+    mt: "^MT-"
+    ribo: "^RP[SL]"
+    hb: "^HB[^(P)]"
+execution:
+  mode: command_and_run
+  approved: true
+outputs:
+  outdir: ./results/scrna_qc
+  report: ./results/scrna_qc/report.md
+  manifest: ./results/scrna_qc/run_manifest.json

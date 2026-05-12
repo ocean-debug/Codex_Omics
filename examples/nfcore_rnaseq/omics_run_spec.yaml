@@ -1,0 +1,29 @@
+run:
+  name: nfcore_rnaseq_command_demo
+  description: Build an nf-core/rnaseq command without executing the workflow.
+  type: nfcore_pipeline
+  skill: nf-core-universal
+inputs:
+  path: ./examples/nfcore_rnaseq/fastq
+  type: fastq_directory
+  species: human
+nfcore:
+  pipeline: rnaseq
+  version: latest
+  params:
+    input: ./examples/nfcore_rnaseq/samplesheet.csv
+    outdir: ./results/nfcore_rnaseq
+    genome: GRCh38
+    aligner: star_salmon
+  samplesheet:
+    path: ./examples/nfcore_rnaseq/samplesheet.csv
+execution:
+  mode: command_only
+  approved: false
+  profile: docker
+  resume: true
+  max_cpus: 12
+outputs:
+  outdir: ./results/nfcore_rnaseq
+  report: ./results/nfcore_rnaseq/report.md
+  manifest: ./results/nfcore_rnaseq/run_manifest.json

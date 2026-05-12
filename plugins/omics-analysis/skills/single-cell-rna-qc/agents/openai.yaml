@@ -1,0 +1,4 @@
+interface:
+  display_name: "Single-cell RNA QC"
+  short_description: "Run reproducible scRNA-seq QC workflows."
+  default_prompt: "QC this single-cell dataset."

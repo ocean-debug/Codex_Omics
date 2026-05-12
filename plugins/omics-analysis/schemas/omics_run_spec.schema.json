@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codex.local/omics_run_spec.schema.json",
+  "title": "Codex Omics Run Spec",
+  "type": "object",
+  "required": ["run", "inputs", "outputs"],
+  "properties": {
+    "run": {
+      "type": "object",
+      "required": ["name", "type", "skill"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "description": {"type": "string"},
+        "type": {
+          "type": "string",
+          "enum": ["nfcore_pipeline", "scrna_qc", "scvi_model", "omics_report", "omics_workflow", "new_skill"]
+        },
+        "skill": {
+          "type": "string",
+          "enum": ["omics-router", "nf-core-universal", "single-cell-rna-qc", "scvi-universal", "omics-report", "omics-workflow", "skill-authoring-kit"]
+        },
+        "created_by": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "inputs": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string"},
+        "type": {"type": "string"},
+        "format": {"type": "string"},
+        "species": {"type": "string"},
+        "metadata": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["command_only", "dry_run", "test_profile", "plan_then_execute", "command_and_run"]
+        },
+        "approved": {"type": "boolean"},
+        "profile": {"type": "string"},
+        "resume": {"type": "boolean"},
+        "force": {"type": "boolean"},
+        "max_cpus": {"type": "integer", "minimum": 1},
+        "max_memory": {"type": "string"},
+        "max_time": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "outputs": {
+      "type": "object",
+      "required": ["outdir"],
+      "properties": {
+        "outdir": {"type": "string"},
+        "report": {"type": "string"},
+        "manifest": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "nfcore": {
+      "type": "object",
+      "properties": {
+        "pipeline": {"type": "string", "minLength": 1},
+        "version": {"type": "string"},
+        "profile": {"type": "string"},
+        "params": {"type": "object"},
+        "samplesheet": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "scrna_qc": {
+      "type": "object",
+      "properties": {
+        "preserve_raw_counts": {"type": "boolean"},
+        "counts_layer": {"type": "string"},
+        "batch_key": {"type": "string"},
+        "filter": {
+          "type": "object",
+          "properties": {
+            "mode": {"type": "string", "enum": ["mad", "fixed"]},
+            "min_counts": {"type": "number"},
+            "max_counts": {"type": "number"},
+            "min_genes": {"type": "number"},
+            "max_genes": {"type": "number"},
+            "max_pct_mito": {"type": "number"},
+            "min_cells_per_gene": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": true
+        },
+        "gene_patterns": {"type": "object"},
+        "optional_checks": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "scvi": {
+      "type": "object",
+      "properties": {
+        "model": {"type": "string", "minLength": 1},
+        "setup_anndata": {"type": "object"},
+        "model_kwargs": {"type": "object"},
+        "train": {"type": "object"},
+        "downstream": {"type": "object"}
+      },
+      "additionalProperties": true
+    },
+    "report": {"type": "object", "additionalProperties": true},
+    "workflow": {
+      "type": "object",
+      "properties": {
+        "outdir": {"type": "string"},
+        "stop_on_failure": {"type": "boolean"},
+        "execution": {"type": "object"},
+        "stages": {
+          "type": "array",
+          "items": {"type": "object"},
+          "minItems": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

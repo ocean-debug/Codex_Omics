@@ -1,0 +1,4 @@
+interface:
+  display_name: "Omics Skill Authoring"
+  short_description: "Create new omics analysis skills."
+  default_prompt: "Create a new omics skill."

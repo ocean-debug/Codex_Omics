@@ -1,0 +1,2 @@
+sample,fastq_1,fastq_2,strandedness
+SAMPLE1,./examples/nfcore_rnaseq/fastq/SAMPLE1_R1.fastq.gz,./examples/nfcore_rnaseq/fastq/SAMPLE1_R2.fastq.gz,auto

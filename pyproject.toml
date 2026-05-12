@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-omics-skills"
+version = "0.1.0"
+description = "Codex plugin and CLI for reproducible omics analysis workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Codex Omics Skills maintainers"}]
+dependencies = [
+  "jsonschema>=4.22",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+nfcore = [
+  "requests>=2.31",
+]
+scverse = [
+  "anndata>=0.10",
+  "scanpy>=1.10",
+  "numpy>=1.26,<2.3",
+  "pandas>=2.2,<2.3",
+  "scipy>=1.11,<1.16",
+  "matplotlib>=3.8,<3.11",
+  "h5py>=3.10,<3.12",
+  "contourpy>=1.2,<1.3",
+  "scikit-learn>=1.4.2,<1.6",
+  "seaborn>=0.13",
+]
+scvi = [
+]
+
+[project.scripts]
+omics-codex = "omics_codex.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "integration: tests that may require optional omics dependencies",
+  "heavy: tests that run real Nextflow or multiple GPU model trainings",
+]

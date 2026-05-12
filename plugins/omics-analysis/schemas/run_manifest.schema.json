@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codex.local/run_manifest.schema.json",
+  "title": "Codex Omics Run Manifest",
+  "type": "object",
+  "required": ["schema_version", "run_id", "status", "skill", "created_at", "inputs", "outputs", "software"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "run_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["planned", "running", "completed", "failed", "skipped", "blocked"]},
+    "skill": {"type": "string"},
+    "created_at": {"type": "string"},
+    "completed_at": {"type": "string"},
+    "inputs": {"type": "object"},
+    "outputs": {"type": "object"},
+    "parameters": {"type": "object"},
+    "software": {"type": "object"},
+    "commands": {"type": "array", "items": {"type": "string"}},
+    "logs": {"type": "array", "items": {"type": "string"}},
+    "errors": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

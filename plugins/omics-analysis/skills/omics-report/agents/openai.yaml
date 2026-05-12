@@ -1,0 +1,4 @@
+interface:
+  display_name: "Omics Report"
+  short_description: "Summarize omics runs from manifests."
+  default_prompt: "Create an omics run report."

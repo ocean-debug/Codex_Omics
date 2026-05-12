@@ -1,0 +1,30 @@
+run:
+  name: scvi_demo
+  description: Validate and train a small SCVI model.
+  type: scvi_model
+  skill: scvi-universal
+inputs:
+  path: ./examples/scvi/synthetic.h5ad
+  type: h5ad
+  synthetic: true
+scvi:
+  model: SCVI
+  setup_anndata:
+    layer: counts
+    batch_key: batch
+  model_kwargs:
+    n_latent: 5
+  train:
+    max_epochs: 2
+  downstream:
+    latent_key: X_scvi
+    neighbors: true
+    umap: true
+    leiden: true
+execution:
+  mode: command_and_run
+  approved: true
+outputs:
+  outdir: ./results/scvi
+  report: ./results/scvi/report.md
+  manifest: ./results/scvi/run_manifest.json

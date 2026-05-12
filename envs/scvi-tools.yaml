@@ -1,0 +1,14 @@
+name: codex-omics-scvi
+channels:
+  - conda-forge
+  - bioconda
+  - pytorch
+dependencies:
+  - python>=3.10
+  - scanpy
+  - anndata
+  - scvi-tools
+  - pytorch
+  - pip
+  - pip:
+      - -e .[dev,scverse,scvi]

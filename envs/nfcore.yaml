@@ -1,0 +1,11 @@
+name: codex-omics-nfcore
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python>=3.10
+  - nextflow
+  - nf-core
+  - pip
+  - pip:
+      - -e .[dev,nfcore]

@@ -1,0 +1,37 @@
+{
+  "name": "omics-analysis",
+  "version": "0.1.0",
+  "description": "Codex plugin for reproducible omics analysis workflows, including universal nf-core execution, single-cell RNA-seq QC, and scvi-tools model workflows.",
+  "author": {
+    "name": "Codex Omics Skills maintainers"
+  },
+  "homepage": "https://github.com/local/codex-omics-skills",
+  "repository": "https://github.com/local/codex-omics-skills",
+  "license": "MIT",
+  "keywords": [
+    "omics",
+    "nf-core",
+    "nextflow",
+    "single-cell",
+    "scvi-tools"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Omics Analysis",
+    "shortDescription": "Reproducible nf-core, scRNA QC, and scvi-tools workflows.",
+    "longDescription": "Plan, validate, execute, and report reproducible omics workflows from Codex through structured run specs, deterministic scripts, manifests, and reports.",
+    "developerName": "Codex Omics Skills maintainers",
+    "category": "Science",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Execute"
+    ],
+    "defaultPrompt": [
+      "Prepare an nf-core run for FASTQ data.",
+      "Run scRNA-seq QC on an h5ad file.",
+      "Train an scvi-tools integration model."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "scVI Universal"
+  short_description: "Run scvi-tools models through adapters."
+  default_prompt: "Train an scvi-tools model."
