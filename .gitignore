@@ -12,6 +12,7 @@ build/
 .cache/
 results/
 logs/
+tools/
 *.h5ad
 *.h5
 *.mtx
