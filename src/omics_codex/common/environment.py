@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from typing import Any
@@ -25,16 +26,31 @@ def command_version(command: str, args: list[str] | None = None) -> dict[str, An
 
 
 def inspect_environment(kind: str = "all") -> dict[str, Any]:
-    probes = {
-        "nfcore": ["java", "nextflow", "nf-core", "docker", "singularity", "apptainer"],
-        "scrna_qc": ["python"],
-        "scvi": ["python"],
+    probes: dict[str, dict[str, list[str] | None]] = {
+        "nfcore": {
+            "java": ["-version"],
+            "nextflow": ["-version"],
+            "nf-core": ["--version"],
+            "git": ["--version"],
+            "docker": ["--version"],
+            "singularity": ["--version"],
+            "apptainer": ["--version"],
+        },
+        "scrna_qc": {"python": ["--version"]},
+        "scvi": {"python": ["--version"]},
     }
-    selected = probes if kind == "all" else {kind: probes.get(kind, [])}
+    selected = probes if kind == "all" else {kind: probes.get(kind, {})}
     result = {
-        group: {name: command_version(name) for name in commands}
+        group: {name: command_version(name, args) for name, args in commands.items()}
         for group, commands in selected.items()
     }
+    if kind in {"all", "nfcore"}:
+        result.setdefault("nfcore", {})
+        result["nfcore"]["environment"] = {
+            "JAVA_HOME": os.environ.get("JAVA_HOME", ""),
+            "NXF_HOME": os.environ.get("NXF_HOME", ""),
+            "PATH": os.environ.get("PATH", ""),
+        }
     if kind in {"all", "scvi"}:
         result.setdefault("scvi", {})
         result["scvi"]["python_packages"] = inspect_python_ml_stack()

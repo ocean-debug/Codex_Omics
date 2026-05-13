@@ -74,16 +74,23 @@ This project is developed on Windows but validated on a remote Linux/HPC environ
 Default validation:
 
 ```bash
+source .venv/bin/activate
+source envs/activate-nextflow.sh
 python -m pytest tests/smoke -q
 python -m pytest tests/unit -q
 python -m pytest tests/integration -q
+omics-codex inspect-env --kind nfcore
 omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
 ```
 
 Heavy checks are opt-in:
 
 ```bash
+source .venv/bin/activate
+source envs/activate-nextflow.sh
 RUN_HEAVY_OMICS=1 python -m pytest tests/heavy -q
 ```
+
+`envs/activate-nextflow.sh` sets project-local Java/Nextflow and a project-local Singularity cache. nf-core Singularity examples use `envs/nextflow-singularity.config` for resumed validation and longer image pull timeouts.
 
 See [docs/acceptance-matrix.md](docs/acceptance-matrix.md) and [docs/release-checklist.md](docs/release-checklist.md) for the current support boundary and release process.

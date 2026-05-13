@@ -23,9 +23,14 @@ def build_nextflow_command(spec: dict[str, Any], test_profile: bool = False) -> 
     version = requested_version
     profile = nfcore.get("profile") or execution.get("profile") or "docker"
     params = dict(nfcore.get("params") or {})
+    for resource_key in ("max_cpus", "max_memory", "max_time"):
+        if resource_key not in params and execution.get(resource_key) is not None:
+            params[resource_key] = execution[resource_key]
     if "outdir" not in params and outputs.get("outdir"):
         params["outdir"] = outputs["outdir"]
     command = ["nextflow", "run", f"nf-core/{pipeline}"]
+    for config_path in _nextflow_config_paths(spec):
+        command.extend(["-c", str(config_path)])
     if version != "latest":
         command.extend(["-r", str(version)])
     if test_profile:
@@ -35,15 +40,28 @@ def build_nextflow_command(spec: dict[str, Any], test_profile: bool = False) -> 
     for key, value in sorted(params.items()):
         if value is None:
             continue
-        flag = f"--{key.replace('_', '-')}"
+        flag = f"--{key}"
         if isinstance(value, bool):
-            if value:
-                command.append(flag)
+            command.extend([flag, "true" if value else "false"])
         else:
             command.extend([flag, str(value)])
     if execution.get("resume", True):
         command.append("-resume")
     return " ".join(shlex.quote(part) for part in command)
+
+
+def _nextflow_config_paths(spec: dict[str, Any]) -> list[str]:
+    nfcore = spec.get("nfcore", {})
+    execution = spec.get("execution", {})
+    paths: list[str] = []
+    for raw in (nfcore.get("config"), nfcore.get("configs"), execution.get("nextflow_config"), execution.get("nextflow_configs")):
+        if raw is None:
+            continue
+        if isinstance(raw, (str, Path)):
+            paths.append(str(raw))
+        else:
+            paths.extend(str(path) for path in raw)
+    return paths
 
 
 def build_test_profile_command(spec: dict[str, Any]) -> str:
@@ -124,6 +142,37 @@ def runtime_blockers(spec: dict[str, Any]) -> list[dict[str, Any]]:
     return errors
 
 
+def _tail_text(path: Path, max_lines: int = 40, max_chars: int = 6000) -> str:
+    if not path.exists():
+        return ""
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    text = "\n".join(lines[-max_lines:])
+    if len(text) > max_chars:
+        return text[-max_chars:]
+    return text
+
+
+def _nextflow_failure_error(returncode: int, outdir: Path) -> dict[str, Any]:
+    stderr_tail = _tail_text(outdir / "nextflow.stderr.log")
+    stdout_tail = _tail_text(outdir / "nextflow.stdout.log")
+    nextflow_tail = _tail_text(outdir / ".nextflow.log")
+    details = {
+        "stdout": str(outdir / "nextflow.stdout.log") if (outdir / "nextflow.stdout.log").exists() else None,
+        "stderr": str(outdir / "nextflow.stderr.log") if (outdir / "nextflow.stderr.log").exists() else None,
+        "nextflow_log": str(outdir / ".nextflow.log") if (outdir / ".nextflow.log").exists() else None,
+        "stderr_tail": stderr_tail or None,
+        "stdout_tail": stdout_tail or None,
+        "nextflow_log_tail": nextflow_tail or None,
+    }
+    return {
+        "error_type": "NextflowExecutionFailed",
+        "message": f"Nextflow exited with status {returncode}",
+        "suggested_fix": "Inspect the preserved Nextflow logs, then rerun the saved command.sh with -resume after fixing the environment or pipeline input issue.",
+        "failed_step": "run_nextflow",
+        "details": {key: value for key, value in details.items() if value},
+    }
+
+
 def run_nfcore(spec: dict[str, Any]) -> dict[str, Any]:
     outputs = spec.get("outputs", {})
     execution = spec.get("execution", {})
@@ -151,13 +200,7 @@ def run_nfcore(spec: dict[str, Any]) -> dict[str, Any]:
                 shutil.copyfile(nextflow_log, outdir / ".nextflow.log")
             status = "completed" if completed.returncode == 0 else "failed"
             if completed.returncode != 0:
-                errors.append(
-                    {
-                        "error_type": "NextflowExecutionFailed",
-                        "message": f"Nextflow exited with status {completed.returncode}",
-                        "failed_step": "run_nextflow",
-                    }
-                )
+                errors.append(_nextflow_failure_error(completed.returncode, outdir))
     else:
         run_cwd = Path(execution.get("workdir") or Path.cwd()).resolve()
         completed = None

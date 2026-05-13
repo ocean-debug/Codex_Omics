@@ -9,3 +9,4 @@
 - Added manifests and markdown reports for run provenance.
 - Verified smoke, unit, and integration tests on the remote validation environment.
 - Known limitation: real nf-core execution requires site-provided Java 17+, Nextflow, and a container backend.
+- v0.2 acceptance work starts from project-local Java/Nextflow activation and real nf-core test-profile enforcement when preflight passes.

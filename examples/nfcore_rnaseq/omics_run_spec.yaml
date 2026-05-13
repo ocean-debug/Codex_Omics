@@ -20,7 +20,8 @@ nfcore:
 execution:
   mode: command_only
   approved: false
-  profile: docker
+  nextflow_config: ./envs/nextflow-singularity.config
+  profile: singularity
   resume: true
   max_cpus: 12
 outputs:

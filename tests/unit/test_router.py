@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from omics_codex.router import build_run_spec, choose_skill, inspect_input_path
+from omics_codex.router import build_request_spec, build_run_spec, choose_skill, inspect_input_path
 
 
 def test_router_nfcore() -> None:
@@ -19,6 +19,7 @@ def test_router_builds_nfcore_spec() -> None:
     spec = build_run_spec("Run nf-core/atacseq on this ATAC FASTQ directory", input_path="reads")
     assert spec["run"]["skill"] == "nf-core-universal"
     assert spec["nfcore"]["pipeline"] == "atacseq"
+    assert spec["nfcore"]["profile"] == "singularity"
     assert spec["execution"]["approved"] is False
 
 
@@ -34,3 +35,17 @@ def test_inspect_input_path_fastq_dir(tmp_path) -> None:
     result = inspect_input_path(str(tmp_path))
     assert result["exists"]
     assert result["fastq_files"] == 1
+
+
+def test_inspect_input_path_10x_mtx_dir(tmp_path) -> None:
+    (tmp_path / "matrix.mtx.gz").write_text("", encoding="utf-8")
+    result = inspect_input_path(str(tmp_path))
+    assert result["type"] == "10x_mtx"
+    assert result["has_10x_mtx"]
+
+
+def test_router_builds_scrna_scvi_workflow_spec() -> None:
+    spec = build_request_spec("Run a workflow with QC and scVI integration", input_path="adata.h5ad")
+    assert spec["workflow"]["execution"]["approved"] is False
+    assert [stage["name"] for stage in spec["workflow"]["stages"]] == ["scrna_qc", "scvi"]
+    assert spec["workflow"]["stages"][1]["connect_from"]["stage"] == "scrna_qc"

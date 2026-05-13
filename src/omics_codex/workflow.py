@@ -83,7 +83,7 @@ def run_workflow(config: dict[str, Any], *, resume: bool = False) -> dict[str, A
         start = monotonic()
         try:
             manifest = run_stage(spec)
-        except OmicsError as exc:
+        except Exception as exc:
             manifest = write_failed_stage_manifest(stage, spec, exc)
         completed_at = now_iso()
         duration_seconds = round(monotonic() - start, 3)
@@ -124,10 +124,12 @@ def workflow_status(config: dict[str, Any]) -> dict[str, Any]:
     if not manifest_path.exists():
         return {"status": "missing", "manifest": str(manifest_path)}
     manifest = load_yaml_or_json(manifest_path)
+    stages = stage_statuses(config, manifest)
     return {
-        "status": manifest.get("status", "unknown"),
+        "status": derive_workflow_status(stages, manifest.get("status", "unknown")),
+        "manifest_status": manifest.get("status", "unknown"),
         "manifest": str(manifest_path),
-        "stages": stage_statuses(config, manifest),
+        "stages": stages,
         "report": manifest.get("outputs", {}).get("report"),
     }
 
@@ -190,7 +192,7 @@ def run_stage(spec: dict[str, Any]) -> dict[str, Any]:
     raise OmicsError("InvalidWorkflowSpec", f"Unsupported workflow stage skill: {skill}", "Choose nf-core, scRNA QC, or scVI.", "run_stage")
 
 
-def write_failed_stage_manifest(stage: dict[str, Any], spec: dict[str, Any], exc: OmicsError) -> dict[str, Any]:
+def write_failed_stage_manifest(stage: dict[str, Any], spec: dict[str, Any], exc: Exception) -> dict[str, Any]:
     outputs = dict(spec.get("outputs", {}))
     outdir = prepare_outdir(outputs.get("outdir", "./results/workflow_failed_stage"))
     outputs.setdefault("outdir", str(outdir))
@@ -202,7 +204,7 @@ def write_failed_stage_manifest(stage: dict[str, Any], spec: dict[str, Any], exc
         inputs=spec.get("inputs", {}),
         outputs=outputs,
         parameters=spec,
-        errors=[exc.to_dict()],
+        errors=[exception_to_error(exc)],
     )
     write_manifest(outputs["manifest"], manifest)
     write_text(outputs["report"], render_report(manifest))
@@ -221,7 +223,9 @@ def stage_statuses(config: dict[str, Any], workflow_manifest: dict[str, Any]) ->
         if manifest_path.exists():
             stage_manifest = load_yaml_or_json(manifest_path)
             record["manifest_exists"] = True
-            record["status"] = record.get("status") or stage_manifest.get("status")
+            if record.get("status"):
+                record["workflow_record_status"] = record["status"]
+            record["status"] = stage_manifest.get("status") or record.get("status")
             record["stage_manifest_status"] = stage_manifest.get("status")
             record["errors"] = stage_manifest.get("errors", [])
         else:
@@ -229,6 +233,32 @@ def stage_statuses(config: dict[str, Any], workflow_manifest: dict[str, Any]) ->
             record["status"] = record.get("status") or "missing"
         statuses.append(record)
     return statuses
+
+
+def exception_to_error(exc: Exception) -> dict[str, Any]:
+    if isinstance(exc, OmicsError):
+        return exc.to_dict()
+    return {
+        "status": "failed",
+        "error_type": exc.__class__.__name__,
+        "message": str(exc),
+        "suggested_fix": "Inspect the stage report, manifest, and Python traceback context, then rerun the workflow.",
+        "failed_step": "run_stage",
+    }
+
+
+def derive_workflow_status(stages: list[dict[str, Any]], fallback: str) -> str:
+    statuses = {str(stage.get("status")) for stage in stages if stage.get("status")}
+    if not statuses:
+        return fallback
+    for status in ["failed", "blocked", "missing"]:
+        if status in statuses:
+            return status
+    if statuses <= {"completed", "skipped_completed"}:
+        return "completed"
+    if "planned" in statuses:
+        return "planned"
+    return fallback
 
 
 def stage_record(

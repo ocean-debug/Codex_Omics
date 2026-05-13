@@ -6,7 +6,7 @@ from typing import Any
 
 def verify_generic_outputs(outdir: str | Path) -> dict[str, Any]:
     root = Path(outdir)
-    multiqc = list(root.rglob("multiqc_report.html")) if root.exists() else []
+    multiqc = list(root.rglob("*multiqc_report.html")) if root.exists() else []
     return {
         "outdir": str(root),
         "exists": root.exists(),

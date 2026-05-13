@@ -17,7 +17,7 @@ from .nfcore.registry import inspect_pipeline, list_pipelines
 from .nfcore.samplesheet import make_samplesheet
 from .nfcore.schema_tools import create_params_template, fetch_pipeline_schema, load_pipeline_schema, validate_params_with_provenance
 from .report import write_report
-from .router import build_run_spec, inspect_input_path
+from .router import build_request_spec, inspect_input_path
 from .scrna_qc.workflow import run_scrna_qc
 from .scvi.registry import inspect_model, list_models
 from .scvi.train import train_scvi, validate_scvi
@@ -188,7 +188,7 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
 
 def cmd_route(args: argparse.Namespace) -> dict[str, Any]:
     prompt = Path(args.prompt).read_text(encoding="utf-8") if Path(args.prompt).exists() else args.prompt
-    spec = build_run_spec(prompt, input_path=args.input)
+    spec = build_request_spec(prompt, input_path=args.input)
     if args.out:
         write_json(args.out, spec)
     return spec
