@@ -32,7 +32,38 @@ For UV-based scVI environments, activate `.venv` first and install `scvi-tools` 
 
 ## Quick Start
 
-Use the safe workflow plan first. This writes a workflow manifest and report, but does not run analysis stages because the example is not approved by default.
+The v0.3 user path is:
+
+```text
+inspect-env -> inspect-data -> route/template -> workflow plan -> approved run -> report
+```
+
+Start by checking the active environment and input directory:
+
+```bash
+omics-codex inspect-env --kind all
+omics-codex inspect-data --input /path/to/input
+```
+
+Generate a safe draft workflow from natural language. Generated specs keep `approved: false`.
+
+```bash
+omics-codex route \
+  --prompt "Create a bulk RNA workflow" \
+  --input /path/to/fastq_dir \
+  --outdir results/bulk_rna \
+  --out bulk_rna.workflow.json
+omics-codex workflow plan --config bulk_rna.workflow.json
+```
+
+Or start from a common template:
+
+```bash
+omics-codex template list
+omics-codex template create --name scrna-qc-scvi --input /path/to/cells.h5ad --outdir results/scrna_scvi --out scrna_scvi.workflow.json
+```
+
+The bundled demo also plans safely. It writes a workflow manifest and report, but does not run analysis stages because the example is not approved by default.
 
 ```bash
 omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
@@ -67,7 +98,9 @@ It contains the plugin descriptor, skills, schemas, and helper scripts. See [doc
 omics-codex --help
 omics-codex validate --config examples/scrna_qc/omics_run_spec.yaml
 omics-codex inspect-data --input /path/to/input
-omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --out omics_run_spec.json
+omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --outdir results/demo --out omics_run_spec.json
+omics-codex template list
+omics-codex template create --name bulk-rna --input /path/to/fastq_dir --out bulk_rna.workflow.json
 omics-codex nfcore build-command --config examples/nfcore_rnaseq/omics_run_spec.yaml
 omics-codex scrna-qc run --config examples/scrna_qc/omics_run_spec.yaml
 omics-codex scvi list-models

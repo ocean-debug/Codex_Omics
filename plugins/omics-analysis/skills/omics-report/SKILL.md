@@ -9,7 +9,7 @@ description: Generate concise methods-ready reports from Codex Omics run manifes
 
 1. Read `run_manifest.json`.
 2. Load optional summaries such as `qc_summary.json`, `scvi_model_summary.json`, or nf-core output inventory.
-3. Render `report.md` with inputs, outputs, parameters, commands, software, status, errors, summaries, and next steps.
+3. Render `report.md` with methods summary, key parameters, key outputs, inputs, outputs, commands, software, status, errors, failure interpretation, summaries, and next steps.
 4. Keep biological interpretation separate unless the user asks for evidence synthesis.
 
 ## Command

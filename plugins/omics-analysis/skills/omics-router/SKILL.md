@@ -7,7 +7,7 @@ description: Route omics analysis requests to the correct Codex Omics skill and 
 
 ## Required workflow
 
-1. Inspect the user request, input paths, and desired outputs with `omics-codex inspect-data --input <path>` when a path is available.
+1. Inspect the user request, environment, input paths, and desired outputs with `omics-codex inspect-env --kind all` and `omics-codex inspect-data --input <path>` when a path is available.
 2. Route to exactly one executable skill unless the user asks for a multi-stage workflow:
    - raw FASTQ/BAM/CRAM, SRA/GEO, Nextflow, nf-core -> `nf-core-universal`;
    - h5ad/10x, scRNA-seq QC, mitochondrial filtering -> `single-cell-rna-qc`;
@@ -15,8 +15,8 @@ description: Route omics analysis requests to the correct Codex Omics skill and 
    - manifest/report summarization -> `omics-report`;
    - adding a new omics workflow skill -> `skill-authoring-kit`.
 3. For multi-stage analysis, create a workflow config and use `omics-codex workflow plan|run|resume|status`.
-4. Create or update `omics_run_spec.yaml` using `omics-codex route` or by following `plugins/omics-analysis/schemas/omics_run_spec.schema.json`.
-5. Validate the run spec with `omics-codex validate --config omics_run_spec.yaml`.
+4. Create or update a safe spec using `omics-codex route --outdir <results>` or `omics-codex template create`; generated specs must keep `approved: false`.
+5. Validate single-run specs with `omics-codex validate --config omics_run_spec.yaml` or plan workflow specs with `omics-codex workflow plan --config workflow.json`.
 
 ## Safety
 
@@ -27,8 +27,11 @@ description: Route omics analysis requests to the correct Codex Omics skill and 
 ## Commands
 
 ```bash
-omics-codex route --prompt prompt.txt --input ./data --out omics_run_spec.yaml
+omics-codex inspect-env --kind all
 omics-codex inspect-data --input ./data
+omics-codex route --prompt prompt.txt --input ./data --outdir results/demo --out workflow.json
+omics-codex template list
+omics-codex template create --name bulk-rna --input ./fastq --outdir results/bulk_rna --out bulk_rna.workflow.json
 omics-codex validate --config omics_run_spec.yaml
-omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
+omics-codex workflow plan --config workflow.json
 ```

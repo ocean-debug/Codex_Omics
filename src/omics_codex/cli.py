@@ -17,7 +17,7 @@ from .nfcore.registry import inspect_pipeline, list_pipelines
 from .nfcore.samplesheet import make_samplesheet
 from .nfcore.schema_tools import create_params_template, fetch_pipeline_schema, load_pipeline_schema, validate_params_with_provenance
 from .report import write_report
-from .router import build_request_spec, inspect_input_path
+from .router import build_request_spec, build_template_spec, inspect_input_path, list_templates
 from .scrna_qc.workflow import run_scrna_qc
 from .scvi.registry import inspect_model, list_models
 from .scvi.train import train_scvi, validate_scvi
@@ -63,6 +63,7 @@ def build_parser() -> argparse.ArgumentParser:
     route_parser = sub.add_parser("route", help="Route a natural-language request to a run spec")
     route_parser.add_argument("--prompt", required=True, help="Prompt text or a path to a prompt file")
     route_parser.add_argument("--input", help="Optional input path")
+    route_parser.add_argument("--outdir", default="./results/omics", help="Result directory to write into generated specs")
     route_parser.add_argument("--out", help="Optional output run spec path")
     route_parser.set_defaults(func=cmd_route)
 
@@ -93,6 +94,16 @@ def build_parser() -> argparse.ArgumentParser:
     create_template.add_argument("--name", required=True)
     create_template.add_argument("--outdir", required=True)
     create_template.set_defaults(func=lambda args: create_omics_skill_template(args.name, args.outdir))
+
+    run_template_parser = sub.add_parser("template", help="Create common omics run/workflow specs")
+    run_template_sub = run_template_parser.add_subparsers(required=True)
+    run_template_sub.add_parser("list", help="List common run/workflow templates").set_defaults(func=lambda args: {"templates": list_templates()})
+    create_run_template = run_template_sub.add_parser("create", help="Create a safe default spec from a common template")
+    create_run_template.add_argument("--name", required=True, choices=["bulk-rna", "atac", "scrna-qc", "scrna-qc-scvi", "scvi"])
+    create_run_template.add_argument("--input", help="Optional input path")
+    create_run_template.add_argument("--outdir", default="./results/omics", help="Result directory to write into generated specs")
+    create_run_template.add_argument("--out", help="Optional output YAML/JSON path")
+    create_run_template.set_defaults(func=cmd_template_create)
 
     add_nfcore(sub)
     add_scrna_qc(sub)
@@ -188,7 +199,14 @@ def cmd_init(args: argparse.Namespace) -> dict[str, Any]:
 
 def cmd_route(args: argparse.Namespace) -> dict[str, Any]:
     prompt = Path(args.prompt).read_text(encoding="utf-8") if Path(args.prompt).exists() else args.prompt
-    spec = build_request_spec(prompt, input_path=args.input)
+    spec = build_request_spec(prompt, input_path=args.input, outdir=args.outdir)
+    if args.out:
+        write_json(args.out, spec)
+    return spec
+
+
+def cmd_template_create(args: argparse.Namespace) -> dict[str, Any]:
+    spec = build_template_spec(args.name, input_path=args.input, outdir=args.outdir)
     if args.out:
         write_json(args.out, spec)
     return spec

@@ -42,3 +42,35 @@ def test_cli_workflow_plan() -> None:
     )
     assert completed.returncode == 0
     assert '"skill": "omics-workflow"' in completed.stdout
+
+
+def test_cli_route_generates_safe_workflow(tmp_path) -> None:
+    (tmp_path / "sample_R1.fastq.gz").write_text("", encoding="utf-8")
+    (tmp_path / "sample_R2.fastq.gz").write_text("", encoding="utf-8")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "omics_codex",
+            "route",
+            "--prompt",
+            "Create a bulk RNA workflow",
+            "--input",
+            str(tmp_path),
+            "--outdir",
+            str(tmp_path / "results"),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0
+    assert '"approved": false' in completed.stdout
+    assert '"name": "rnaseq_workflow"' in completed.stdout
+
+
+def test_cli_template_list() -> None:
+    completed = subprocess.run([sys.executable, "-m", "omics_codex", "template", "list"], text=True, capture_output=True, check=False)
+    assert completed.returncode == 0
+    assert '"bulk-rna"' in completed.stdout
+    assert '"scrna-qc-scvi"' in completed.stdout

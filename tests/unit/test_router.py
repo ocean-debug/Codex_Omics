@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from omics_codex.router import build_request_spec, build_run_spec, choose_skill, inspect_input_path
+from omics_codex.router import build_request_spec, build_run_spec, build_template_spec, choose_skill, inspect_input_path, list_templates
 
 
 def test_router_nfcore() -> None:
     assert choose_skill("Run nf-core/rnaseq on FASTQ files") == "nf-core-universal"
+    assert choose_skill("Create a bulk RNA workflow") == "nf-core-universal"
 
 
 def test_router_scvi() -> None:
@@ -51,6 +52,32 @@ def test_router_builds_scrna_scvi_workflow_spec() -> None:
     assert spec["workflow"]["execution"]["approved"] is False
     assert [stage["name"] for stage in spec["workflow"]["stages"]] == ["scrna_qc", "scvi"]
     assert spec["workflow"]["stages"][1]["connect_from"]["stage"] == "scrna_qc"
+    assert "inspect-env" in spec["codex_user_path"]["commands"][0]
+
+
+def test_bulk_rna_workflow_does_not_route_to_scrna_scvi(tmp_path) -> None:
+    (tmp_path / "sample_R1.fastq.gz").write_text("", encoding="utf-8")
+    (tmp_path / "sample_R2.fastq.gz").write_text("", encoding="utf-8")
+
+    spec = build_request_spec("Create a bulk RNA workflow", input_path=str(tmp_path), outdir="results/bulk")
+
+    assert spec["workflow"]["name"] == "rnaseq_workflow"
+    assert spec["workflow"]["execution"]["approved"] is False
+    assert spec["workflow"]["stages"][0]["spec"]["nfcore"]["pipeline"] == "rnaseq"
+    assert "bulk" in spec["workflow"]["stages"][0]["spec"]["outputs"]["outdir"]
+
+
+def test_common_templates_are_safe_by_default() -> None:
+    names = {item["name"] for item in list_templates()}
+    assert {"bulk-rna", "atac", "scrna-qc", "scrna-qc-scvi", "scvi"} <= names
+
+    bulk = build_template_spec("bulk-rna", outdir="results/bulk")
+    assert bulk["workflow"]["execution"]["approved"] is False
+    assert bulk["workflow"]["stages"][0]["spec"]["nfcore"]["pipeline"] == "rnaseq"
+
+    scvi = build_template_spec("scvi", input_path="cells.h5ad", outdir="results/scvi")
+    assert scvi["execution"]["approved"] is False
+    assert scvi["run"]["skill"] == "scvi-universal"
 
 
 def test_router_generates_nfcore_spec_from_fastq_directory(tmp_path) -> None:

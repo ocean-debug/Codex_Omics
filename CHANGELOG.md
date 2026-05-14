@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.3.0
+
+- Added common safe-default templates for `bulk-rna`, `atac`, `scrna-qc`, `scrna-qc-scvi`, and `scvi`.
+- Improved natural-language routing so bulk RNA and ATAC workflow requests generate nf-core workflow specs instead of being misrouted to scRNA QC plus scVI.
+- Added `omics-codex route --outdir` and `omics-codex template list|create` for the v0.3 user path: inspect environment, inspect data, generate a spec, plan, approve, run, and report.
+- Upgraded reports with experiment-aware methods, key parameter, key output, and failure interpretation sections.
+- Updated public user and plugin documentation around repo-local plugin usage and safe approval flow.
+
+## 0.2.2
+
 - Set project-local Nextflow activation to `NXF_SYNTAX_PARSER=v1` for compatibility with nf-core pipelines that still use legacy config syntax.
 - Added ATAC acceptance auto-detection for `read_length`, with `CODEX_OMICS_ATAC_READ_LENGTH` and `CODEX_OMICS_ATAC_MACS_GSIZE` overrides.
 - Classified ATAC `--read_length` / `--macs_gsize`, samplesheet, and container-pull failures more precisely.

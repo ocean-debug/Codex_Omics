@@ -40,6 +40,9 @@ python -m pytest tests/unit -q
 python -m pytest tests/integration -q
 omics-codex inspect-env --kind nfcore
 omics-codex inspect-env --kind scvi
+omics-codex route --prompt "Create a bulk RNA workflow" --input examples --outdir results/route_demo --out results/route_demo.workflow.json
+omics-codex template list
+omics-codex template create --name scrna-qc-scvi --input examples --outdir results/template_scrna_scvi --out results/template_scrna_scvi.workflow.json
 omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
 ```
 
@@ -56,7 +59,7 @@ RUN_HEAVY_OMICS=1 python -m pytest tests/heavy/test_scvi_family_training.py -q
 RUN_HEAVY_OMICS=1 python -m pytest tests/heavy/test_nfcore_rnaseq_profile.py -q
 ```
 
-Current v0.2 acceptance expectations:
+Current v0.3 acceptance expectations:
 
 - scVI family light training is the primary heavy GPU check.
 - `inspect-env --kind scvi` must report `scvi-tools`, PyTorch CUDA availability, visible GPU metadata, and actionable UV install hints when components are missing.
@@ -80,7 +83,7 @@ export CODEX_OMICS_MAX_MEMORY=48.GB
 bash scripts/acceptance/run_all.sh
 ```
 
-Record statuses from `summary.json`. scVI and bulk RNA must be `completed`. A restricted-node ATAC failure is acceptable only when the manifest classifies it as a pipeline pull/network/cache issue, pipeline config/Nextflow compatibility issue, or container pull issue, and preserves the saved command plus Nextflow logs.
+Record statuses from `summary.json`. scVI and bulk RNA remain the active real-data gates. ATAC command/spec/report compatibility should remain intact, but ATAC true execution is not part of the routine v0.3 release gate unless explicitly requested.
 
 ## GitHub Release
 

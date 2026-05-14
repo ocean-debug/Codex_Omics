@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers the public v0.2.1 workflow for users who clone the repository and install the `omics-codex` CLI.
+This guide covers the public v0.3 workflow for users who clone the repository and install the `omics-codex` CLI.
 
 ## Setup
 
@@ -21,14 +21,33 @@ omics-codex inspect-env --kind all
 
 `inspect-env` returns a structured `status`, `blockers`, `warnings`, and `install_hints`. Fix blockers before running real workflows.
 
+The recommended user path is:
+
+```text
+inspect-env -> inspect-data -> route/template -> plan/validate -> approved run -> report
+```
+
 Inspect data and generate a safe draft spec before running:
 
 ```bash
 omics-codex inspect-data --input /path/to/input
-omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --out omics_run_spec.json
+omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --outdir results/demo --out omics_run_spec.json
 ```
 
 Router-generated specs keep `approved: false` and include environment requirements such as Java/Nextflow/nf-core/container support for nf-core or scvi-tools/PyTorch requirements for scVI.
+
+Common templates are available when you want a known starting point instead of free-form routing:
+
+```bash
+omics-codex template list
+omics-codex template create --name bulk-rna --input /path/to/fastq_dir --outdir results/bulk_rna --out bulk_rna.workflow.json
+omics-codex template create --name atac --input /path/to/fastq_dir --outdir results/atac --out atac.workflow.json
+omics-codex template create --name scrna-qc --input /path/to/cells.h5ad --outdir results/scrna_qc --out scrna_qc.json
+omics-codex template create --name scrna-qc-scvi --input /path/to/cells.h5ad --outdir results/scrna_scvi --out scrna_scvi.workflow.json
+omics-codex template create --name scvi --input /path/to/cells.h5ad --outdir results/scvi --out scvi.json
+```
+
+`bulk-rna`, `atac`, and `scrna-qc-scvi` produce workflow specs for `workflow plan/run`. `scrna-qc` and `scvi` produce single-run specs for `validate/run`.
 
 ## Workflow
 
@@ -147,3 +166,10 @@ omics-codex report --manifest results/workflows/scrna_qc_scvi/workflow_manifest.
 ```
 
 Reports summarize inputs, outputs, software versions, commands, errors, and next steps. For workflow runs, review both the aggregate workflow manifest and each stage manifest.
+
+v0.3 reports add experiment-aware sections:
+
+- `Methods Summary`: what was planned or run.
+- `Key Parameters`: pipeline/profile, QC thresholds, model, epochs, latent key.
+- `Key Outputs`: manifest, report, MultiQC, filtered AnnData, trained model outputs.
+- `Failure Interpretation`: structured failure cause and suggested fix when available.

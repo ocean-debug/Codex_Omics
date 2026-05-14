@@ -1,6 +1,6 @@
 {
   "name": "omics-analysis",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Codex plugin for reproducible omics analysis workflows, including universal nf-core execution, single-cell RNA-seq QC, and scvi-tools model workflows.",
   "author": {
     "name": "Codex Omics Skills maintainers"
@@ -28,6 +28,7 @@
       "Execute"
     ],
     "defaultPrompt": [
+      "Inspect an input directory and generate a safe omics workflow plan.",
       "Prepare an nf-core run for FASTQ data.",
       "Run scRNA-seq QC on an h5ad file.",
       "Train an scvi-tools integration model."

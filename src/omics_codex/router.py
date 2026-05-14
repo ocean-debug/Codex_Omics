@@ -5,10 +5,37 @@ from pathlib import Path
 from typing import Any
 
 
+TEMPLATE_ALIASES = {
+    "bulk-rna": "bulk-rna",
+    "bulk_rna": "bulk-rna",
+    "rnaseq": "bulk-rna",
+    "rna-seq": "bulk-rna",
+    "atac": "atac",
+    "atacseq": "atac",
+    "atac-seq": "atac",
+    "scrna-qc": "scrna-qc",
+    "scrna_qc": "scrna-qc",
+    "single-cell-qc": "scrna-qc",
+    "scrna-qc-scvi": "scrna-qc-scvi",
+    "scrna_scvi": "scrna-qc-scvi",
+    "qc-scvi": "scrna-qc-scvi",
+    "scvi": "scvi",
+    "scvi-only": "scvi",
+}
+
+TEMPLATE_DESCRIPTIONS = {
+    "bulk-rna": "Bulk RNA-seq nf-core/rnaseq workflow template.",
+    "atac": "ATAC-seq nf-core/atacseq workflow template.",
+    "scrna-qc": "Single-cell RNA-seq QC run template.",
+    "scrna-qc-scvi": "Single-cell RNA-seq QC followed by scVI workflow template.",
+    "scvi": "scVI-only model training run template.",
+}
+
+
 def choose_skill(prompt: str, input_path: str | None = None) -> str:
     text = f"{prompt} {input_path or ''}".lower()
     inspection = inspect_input_path(input_path)
-    if any(token in text for token in ["nf-core", "nextflow", "fastq", "bam", "cram", "sra", "geo", "rnaseq", "sarek", "atacseq"]):
+    if any(token in text for token in ["nf-core", "nextflow", "fastq", "bam", "cram", "sra", "geo", "rnaseq", "rna-seq", "rna seq", "bulk rna", "sarek", "atacseq", "atac-seq", "atac seq"]):
         return "nf-core-universal"
     if any(token in text for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch correction", "latent"]):
         return "scvi-universal"
@@ -52,6 +79,7 @@ def build_run_spec(prompt: str, input_path: str | None = None, outdir: str = "./
             "report": str(Path(outdir) / "report.md"),
             "manifest": str(Path(outdir) / "run_manifest.json"),
         },
+        "codex_user_path": user_path_steps(kind="run", out_path="<generated-spec.yaml>", result_dir=outdir, skill=skill),
     }
     if skill == "nf-core-universal":
         pipeline = infer_nfcore_pipeline(prompt, input_path)
@@ -88,6 +116,9 @@ def build_run_spec(prompt: str, input_path: str | None = None, outdir: str = "./
 def build_request_spec(prompt: str, input_path: str | None = None, outdir: str = "./results/omics") -> dict[str, Any]:
     if wants_scrna_scvi_workflow(prompt):
         return build_scrna_scvi_workflow_spec(prompt, input_path, outdir)
+    if wants_nfcore_workflow(prompt, input_path):
+        pipeline = infer_nfcore_pipeline(prompt, input_path)
+        return build_nfcore_workflow_spec(prompt, input_path, outdir, pipeline)
     return build_run_spec(prompt, input_path, outdir)
 
 
@@ -95,7 +126,66 @@ def wants_scrna_scvi_workflow(prompt: str) -> bool:
     text = prompt.lower()
     has_qc = any(token in text for token in ["qc", "quality control", "filter"])
     has_scvi = any(token in text for token in ["scvi", "scanvi", "batch correction", "latent", "integration"])
-    return "workflow" in text or (has_qc and has_scvi)
+    has_single_cell = any(token in text for token in ["scrna", "single-cell", "single cell", "h5ad", "10x"])
+    return (has_qc and has_scvi) or ("workflow" in text and has_scvi and has_single_cell)
+
+
+def wants_nfcore_workflow(prompt: str, input_path: str | None = None) -> bool:
+    text = prompt.lower()
+    if "workflow" not in text and "pipeline" not in text:
+        return False
+    return choose_skill(prompt, input_path) == "nf-core-universal"
+
+
+def list_templates() -> list[dict[str, str]]:
+    return [
+        {"name": name, "description": description}
+        for name, description in sorted(TEMPLATE_DESCRIPTIONS.items())
+    ]
+
+
+def build_template_spec(template: str, input_path: str | None = None, outdir: str = "./results/omics", prompt: str | None = None) -> dict[str, Any]:
+    name = normalize_template_name(template)
+    template_prompt = prompt or TEMPLATE_DESCRIPTIONS[name]
+    if name == "bulk-rna":
+        return build_nfcore_workflow_spec(template_prompt, input_path, outdir, "rnaseq")
+    if name == "atac":
+        return build_nfcore_workflow_spec(template_prompt, input_path, outdir, "atacseq")
+    if name == "scrna-qc":
+        return build_run_spec(f"{template_prompt} scRNA QC", input_path, outdir)
+    if name == "scrna-qc-scvi":
+        return build_scrna_scvi_workflow_spec(template_prompt, input_path, outdir)
+    if name == "scvi":
+        return build_run_spec(f"{template_prompt} scvi", input_path, outdir)
+    raise ValueError(f"Unsupported template: {template}")
+
+
+def normalize_template_name(template: str) -> str:
+    key = template.strip().lower()
+    if key not in TEMPLATE_ALIASES:
+        valid = ", ".join(sorted(TEMPLATE_DESCRIPTIONS))
+        raise ValueError(f"Unknown template '{template}'. Choose one of: {valid}.")
+    return TEMPLATE_ALIASES[key]
+
+
+def build_nfcore_workflow_spec(prompt: str, input_path: str | None, outdir: str, pipeline: str) -> dict[str, Any]:
+    run_out = str(Path(outdir) / pipeline)
+    spec = build_run_spec(f"{prompt} nf-core/{pipeline}", input_path, run_out)
+    spec["run"]["name"] = f"nfcore_{pipeline}"
+    spec["nfcore"]["pipeline"] = pipeline
+    spec["nfcore"]["params"] = infer_nfcore_params(pipeline, spec["inputs"].get("path"), run_out, spec["inputs"].get("inspection", {}))
+    return {
+        "workflow": {
+            "name": f"{pipeline}_workflow",
+            "description": prompt,
+            "outdir": outdir,
+            "requirements": requirements_for_skill("nf-core-universal"),
+            "stop_on_failure": True,
+            "execution": {"mode": "plan_then_execute", "approved": False},
+            "stages": [{"name": pipeline, "spec": spec}],
+        },
+        "codex_user_path": user_path_steps(kind="workflow", out_path="<generated-workflow.yaml>", result_dir=outdir, skill="nf-core-universal"),
+    }
 
 
 def build_scrna_scvi_workflow_spec(prompt: str, input_path: str | None, outdir: str) -> dict[str, Any]:
@@ -150,7 +240,33 @@ def build_scrna_scvi_workflow_spec(prompt: str, input_path: str | None, outdir: 
                     },
                 },
             ],
-        }
+        },
+        "codex_user_path": user_path_steps(kind="workflow", out_path="<generated-workflow.yaml>", result_dir=outdir, skill="scvi-universal"),
+    }
+
+
+def user_path_steps(kind: str, out_path: str, result_dir: str, skill: str) -> dict[str, Any]:
+    env_kind = "all"
+    if skill == "nf-core-universal":
+        env_kind = "nfcore"
+    elif skill == "scvi-universal":
+        env_kind = "scvi"
+    elif skill == "single-cell-rna-qc":
+        env_kind = "scrna_qc"
+    plan_command = f"omics-codex workflow plan --config {out_path}" if kind == "workflow" else f"omics-codex validate --config {out_path}"
+    run_command = f"omics-codex workflow run --config {out_path}" if kind == "workflow" else f"omics-codex run --config {out_path}"
+    manifest_name = "workflow_manifest.json" if kind == "workflow" else "run_manifest.json"
+    manifest_path = f"{result_dir.rstrip('/')}/{manifest_name}"
+    return {
+        "summary": "inspect-env -> inspect-data -> route/template -> plan/validate -> approved run -> report",
+        "safe_default": "Generated specs keep approved: false. Review and explicitly set approved: true before real execution.",
+        "commands": [
+            f"omics-codex inspect-env --kind {env_kind}",
+            "omics-codex inspect-data --input <input-path>",
+            plan_command,
+            run_command,
+            f"omics-codex report --manifest {manifest_path}",
+        ],
     }
 
 

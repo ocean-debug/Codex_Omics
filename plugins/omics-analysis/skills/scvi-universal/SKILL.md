@@ -7,12 +7,14 @@ description: Run installed scvi-tools models through a registry and adapter syst
 
 ## Required workflow
 
-1. List or inspect models with `omics-codex scvi list-models` or `omics-codex scvi inspect <MODEL>`.
-2. Validate AnnData with `omics-codex scvi validate --config omics_run_spec.yaml`.
-3. Confirm raw integer counts are in `adata.X` or the configured layer.
-4. Confirm `batch_key`, labels, protein matrices, or accessibility matrices required by the selected model.
-5. Train only when the run spec is approved and the environment is correct.
-6. Save model directory, trained h5ad, `scvi_model_summary.json`, `report.md`, and `run_manifest.json`.
+1. Inspect the environment with `omics-codex inspect-env --kind scvi`; fix missing `scvi-tools`, CPU-only PyTorch, or GPU/CUDA mismatches before training.
+2. Create a safe spec with `omics-codex template create --name scvi` or use a QC-to-scVI workflow with `omics-codex template create --name scrna-qc-scvi`.
+3. List or inspect models with `omics-codex scvi list-models` or `omics-codex scvi inspect <MODEL>`.
+4. Validate AnnData with `omics-codex scvi validate --config omics_run_spec.yaml`.
+5. Confirm raw integer counts are in `adata.X` or the configured layer.
+6. Confirm `batch_key`, labels, protein matrices, or accessibility matrices required by the selected model.
+7. Train only when the run spec is approved and the environment is correct.
+8. Save model directory, trained h5ad, `scvi_model_summary.json`, `report.md`, and `run_manifest.json`.
 
 ## Adapter policy
 
@@ -28,6 +30,8 @@ description: Run installed scvi-tools models through a registry and adapter syst
 ## Commands
 
 ```bash
+omics-codex inspect-env --kind scvi
+omics-codex template create --name scvi --input cells.h5ad --outdir results/scvi --out scvi.json
 omics-codex scvi list-models
 omics-codex scvi inspect SCVI
 omics-codex scvi validate --config omics_run_spec.yaml

@@ -41,6 +41,9 @@ omics-codex --help
 omics-codex inspect-env --kind all
 omics-codex inspect-env --kind nfcore
 omics-codex inspect-env --kind scvi
+omics-codex route --prompt "Create a bulk RNA workflow" --input examples --outdir results/route_demo --out results/route_demo.workflow.json
+omics-codex template list
+omics-codex template create --name scrna-qc-scvi --input examples --outdir results/template_scrna_scvi --out results/template_scrna_scvi.workflow.json
 omics-codex validate --config examples/scrna_qc/omics_run_spec.yaml
 omics-codex nfcore build-command --config examples/nfcore_rnaseq/omics_run_spec.yaml
 omics-codex scrna-qc run --config examples/scrna_qc/omics_run_spec.yaml
@@ -91,15 +94,11 @@ bash scripts/acceptance/run_all.sh
 
 For ATAC, the script infers `read_length` from the first FASTQ by default. Set
 `CODEX_OMICS_ATAC_READ_LENGTH` or `CODEX_OMICS_ATAC_MACS_GSIZE` to override the
-auto-detected MACS2 genome-size input strategy. If ATAC fails while pulling
-containers, pre-pull the reported image into `tools/nextflow/apptainer-cache`
-or rerun with `-resume` after network access is available.
+auto-detected MACS2 genome-size input strategy. ATAC is no longer a default
+blocker for v0.3 usability work; keep its command/spec/report path working, but
+do not rerun ATAC as a routine validation unless explicitly requested.
 
 The current reference run completed real scVI subset training and bulk RNA
-`nf-core/rnaseq` subset execution. The ATAC run prepared inputs and command
-provenance; execution depends on both network/pipeline cache availability and
-`nf-core/atacseq` compatibility with the installed Nextflow version. If it
-fails, the manifest should classify the failure and preserve the saved command
-plus Nextflow logs. The aggregate `summary.json` treats scVI and bulk RNA as
-required completed checks; ATAC is accepted only when it completes or records a
-known classified pipeline pull, config parse, or container pull failure.
+`nf-core/rnaseq` subset execution. ATAC command/spec compatibility is assumed
+for the current v0.3 path and should be revisited only when ATAC is back in
+scope.
