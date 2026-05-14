@@ -78,3 +78,16 @@ def test_run_nfcore_failed_execution_preserves_log_tails(tmp_path, monkeypatch) 
     assert manifest["status"] == "failed"
     assert manifest["errors"][0]["details"]["stderr_tail"] == "stderr root cause"
     assert "root cause" in manifest["errors"][0]["details"]["nextflow_log_tail"]
+
+
+def test_runtime_blockers_rejects_unparseable_java_version(monkeypatch) -> None:
+    monkeypatch.setattr(command_module, "_java_version_text", lambda: "java version unknown")
+    monkeypatch.setattr(
+        command_module.shutil,
+        "which",
+        lambda name: f"/usr/bin/{name}" if name in {"nextflow", "nf-core", "singularity"} else None,
+    )
+
+    errors = command_module.runtime_blockers({"nfcore": {"profile": "singularity"}})
+
+    assert any(error["failed_step"] == "preflight_java" and error["error_type"] == "UnsupportedRuntime" for error in errors)

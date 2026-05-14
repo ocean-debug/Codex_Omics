@@ -23,10 +23,10 @@ Use this checklist before tagging a public release.
 Run a repository scan before publishing:
 
 ```bash
-git grep -n -I -E "<private-user>|<private-host>|<credential-pattern>" HEAD -- . ':!*.h5ad' ':!*.h5mu'
+git grep -n -I -E "192[.]168[.]|/[h]ome/[A-Za-z0-9._-]+|((pass(word|wd)|[s]ecret|[t]oken|api[_-]?[k]ey|private[_-]?[k]ey)[[:space:]_A-Za-z-]*[:=][[:space:]]*['\"][^'\"]+)" HEAD -- . ':!*.h5ad' ':!*.h5mu'
 ```
 
-The scan should return no matches. If a match is intentional documentation, replace it with a placeholder before release.
+The scan should return no private paths, hosts, or credentials. Generic code terms such as `token` are acceptable only when they are not values or secrets.
 
 ## Default Validation
 
@@ -74,12 +74,13 @@ When site test data is available, run the non-committed acceptance templates:
 ```bash
 export CODEX_OMICS_DATA_DIR=/path/to/data/test
 export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
-bash scripts/acceptance/run_scvi.sh
-bash scripts/acceptance/run_bulk_rna.sh
-bash scripts/acceptance/run_atac.sh
+export CODEX_OMICS_NFCORE_PROFILE=singularity
+export CODEX_OMICS_MAX_CPUS=12
+export CODEX_OMICS_MAX_MEMORY=48.GB
+bash scripts/acceptance/run_all.sh
 ```
 
-Record statuses from `summary.json`. A restricted-node ATAC failure is acceptable only when the manifest classifies it as a pipeline pull/network/cache issue or pipeline config/Nextflow compatibility issue, and preserves the saved command plus Nextflow logs.
+Record statuses from `summary.json`. scVI and bulk RNA must be `completed`. A restricted-node ATAC failure is acceptable only when the manifest classifies it as a pipeline pull/network/cache issue, pipeline config/Nextflow compatibility issue, or container pull issue, and preserves the saved command plus Nextflow logs.
 
 ## GitHub Release
 

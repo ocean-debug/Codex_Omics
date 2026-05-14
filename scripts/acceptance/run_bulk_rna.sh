@@ -7,11 +7,18 @@ RESULT_DIR="${CODEX_OMICS_RESULT_DIR:-${DATA_DIR}/result}"
 OUT="${RESULT_DIR}/bulk_rna"
 mkdir -p "${OUT}/work"
 export CODEX_OMICS_ROOT="${ROOT}" CODEX_OMICS_DATA_DIR="${DATA_DIR}" CODEX_OMICS_RESULT_DIR="${RESULT_DIR}"
+NFCORE_PROFILE="${CODEX_OMICS_NFCORE_PROFILE:-singularity}"
+MAX_CPUS="${CODEX_OMICS_MAX_CPUS:-12}"
+MAX_MEMORY="${CODEX_OMICS_MAX_MEMORY:-48.GB}"
 
 python "${ROOT}/scripts/acceptance/prepare_test_inputs.py" bulk_rna | tee "${OUT}/prepare.log"
 
 FASTA="${CODEX_OMICS_FASTA:-$(find "${DATA_DIR}/nf-core/genome" \( -name '*.fa' -o -name '*.fasta' \) -type f | sort | head -1)}"
 GTF="${CODEX_OMICS_GTF:-$(find "${DATA_DIR}/nf-core/genome" -name '*.gtf' -type f | sort | head -1)}"
+if [[ -z "${FASTA}" || -z "${GTF}" ]]; then
+  echo "Missing genome FASTA/GTF. Set CODEX_OMICS_FASTA and CODEX_OMICS_GTF or place files under ${DATA_DIR}/nf-core/genome." >&2
+  exit 2
+fi
 
 cat > "${OUT}/rnaseq_params.config" <<'EOF'
 params {
@@ -32,7 +39,7 @@ inputs:
 nfcore:
   pipeline: rnaseq
   version: latest
-  profile: singularity
+  profile: ${NFCORE_PROFILE}
   params:
     input: ${OUT}/samplesheet.csv
     outdir: ${OUT}/nfcore_out
@@ -44,8 +51,8 @@ execution:
   resume: true
   force: true
   workdir: ${OUT}/work
-  max_cpus: 12
-  max_memory: 48.GB
+  max_cpus: ${MAX_CPUS}
+  max_memory: ${MAX_MEMORY}
   nextflow_configs:
     - ${ROOT}/envs/nextflow-singularity.config
     - ${OUT}/rnaseq_params.config
@@ -57,4 +64,4 @@ EOF
 
 omics-codex inspect-env --kind nfcore | tee "${OUT}/inspect_env.json"
 omics-codex nfcore run --config "${OUT}/rnaseq_real_subset.yaml" | tee "${OUT}/omics_codex_nfcore_run.json"
-omics-codex report --manifest "${OUT}/run_manifest.json" > "${OUT}/report.md" || true
+omics-codex report --manifest "${OUT}/run_manifest.json" > "${OUT}/report.md"

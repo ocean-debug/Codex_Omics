@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers the public v0.2.0 workflow for users who clone the repository and install the `omics-codex` CLI.
+This guide covers the public v0.2.1 workflow for users who clone the repository and install the `omics-codex` CLI.
 
 ## Setup
 
@@ -20,6 +20,15 @@ omics-codex inspect-env --kind all
 ```
 
 `inspect-env` returns a structured `status`, `blockers`, `warnings`, and `install_hints`. Fix blockers before running real workflows.
+
+Inspect data and generate a safe draft spec before running:
+
+```bash
+omics-codex inspect-data --input /path/to/input
+omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --out omics_run_spec.json
+```
+
+Router-generated specs keep `approved: false` and include environment requirements such as Java/Nextflow/nf-core/container support for nf-core or scvi-tools/PyTorch requirements for scVI.
 
 ## Workflow
 
@@ -118,12 +127,13 @@ Reusable templates live in `scripts/acceptance/`:
 ```bash
 export CODEX_OMICS_DATA_DIR=/path/to/data/test
 export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
-bash scripts/acceptance/run_scvi.sh
-bash scripts/acceptance/run_bulk_rna.sh
-bash scripts/acceptance/run_atac.sh
+export CODEX_OMICS_NFCORE_PROFILE=singularity
+export CODEX_OMICS_MAX_CPUS=12
+export CODEX_OMICS_MAX_MEMORY=48.GB
+bash scripts/acceptance/run_all.sh
 ```
 
-Expected input layout is `nf-core/rna`, `nf-core/atac`, `nf-core/genome`, and `scvi` under `CODEX_OMICS_DATA_DIR`. Generated subsets, specs, manifests, logs, and reports are written under separate result subfolders.
+Expected input layout is `nf-core/rna`, `nf-core/atac`, `nf-core/genome`, and `scvi` under `CODEX_OMICS_DATA_DIR`. Generated subsets, specs, manifests, logs, and reports are written under separate result subfolders. `summary.json` is the release gate: scVI and bulk RNA must complete; ATAC may remain failed/blocked only when the manifest has a known classified pipeline pull, config parse, or container pull failure with saved commands and logs.
 
 ## Reports
 

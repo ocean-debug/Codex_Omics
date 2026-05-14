@@ -1,16 +1,24 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 
 def choose_skill(prompt: str, input_path: str | None = None) -> str:
     text = f"{prompt} {input_path or ''}".lower()
+    inspection = inspect_input_path(input_path)
     if any(token in text for token in ["nf-core", "nextflow", "fastq", "bam", "cram", "sra", "geo", "rnaseq", "sarek", "atacseq"]):
         return "nf-core-universal"
     if any(token in text for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch correction", "latent"]):
         return "scvi-universal"
     if any(token in text for token in ["h5ad", "10x", "scrna", "single-cell", "single cell", "qc", "mitochondrial"]):
+        return "single-cell-rna-qc"
+    if inspection.get("fastq_pairs", 0) > 0 or inspection.get("fastq_files", 0) > 0:
+        return "nf-core-universal"
+    if inspection.get("h5ad_files", 0) > 0 or inspection.get("type") == "h5ad":
+        return "single-cell-rna-qc"
+    if inspection.get("type") in {"10x_h5", "10x_mtx"}:
         return "single-cell-rna-qc"
     if any(token in text for token in ["new skill", "add skill", "authoring", "template"]):
         return "skill-authoring-kit"
@@ -18,7 +26,10 @@ def choose_skill(prompt: str, input_path: str | None = None) -> str:
 
 
 def build_run_spec(prompt: str, input_path: str | None = None, outdir: str = "./results/omics") -> dict[str, Any]:
+    inspection = inspect_input_path(input_path)
     skill = choose_skill(prompt, input_path)
+    selected_input = select_primary_input_path(input_path, inspection, skill)
+    input_type = infer_input_type(selected_input) if selected_input and selected_input != input_path else inspection["type"]
     run_type = {
         "nf-core-universal": "nfcore_pipeline",
         "single-cell-rna-qc": "scrna_qc",
@@ -26,7 +37,6 @@ def build_run_spec(prompt: str, input_path: str | None = None, outdir: str = "./
         "omics-report": "omics_report",
         "skill-authoring-kit": "new_skill",
     }.get(skill, "omics_report")
-    inspection = inspect_input_path(input_path)
     spec: dict[str, Any] = {
         "run": {
             "name": "omics_request",
@@ -34,8 +44,9 @@ def build_run_spec(prompt: str, input_path: str | None = None, outdir: str = "./
             "type": run_type,
             "skill": skill,
         },
-        "inputs": {"path": input_path or "", "type": inspection["type"], "inspection": inspection},
+        "inputs": {"path": selected_input or "", "type": input_type, "inspection": inspection},
         "execution": {"mode": "plan_then_execute", "approved": False},
+        "requirements": requirements_for_skill(skill),
         "outputs": {
             "outdir": outdir,
             "report": str(Path(outdir) / "report.md"),
@@ -48,7 +59,7 @@ def build_run_spec(prompt: str, input_path: str | None = None, outdir: str = "./
             "pipeline": pipeline,
             "version": "latest",
             "profile": infer_execution_profile(prompt),
-            "params": infer_nfcore_params(pipeline, input_path, outdir),
+            "params": infer_nfcore_params(pipeline, selected_input, outdir, inspection),
         }
     elif skill == "single-cell-rna-qc":
         spec["scrna_qc"] = {
@@ -89,6 +100,8 @@ def wants_scrna_scvi_workflow(prompt: str) -> bool:
 
 def build_scrna_scvi_workflow_spec(prompt: str, input_path: str | None, outdir: str) -> dict[str, Any]:
     inspection = inspect_input_path(input_path)
+    selected_input = select_primary_input_path(input_path, inspection, "single-cell-rna-qc")
+    input_type = infer_input_type(selected_input) if selected_input and selected_input != input_path else inspection["type"]
     scrna_out = str(Path(outdir) / "scrna_qc")
     scvi_out = str(Path(outdir) / "scvi")
     return {
@@ -96,6 +109,13 @@ def build_scrna_scvi_workflow_spec(prompt: str, input_path: str | None, outdir: 
             "name": "scrna_qc_scvi_request",
             "description": prompt,
             "outdir": outdir,
+            "requirements": {
+                "software": [
+                    "scverse stack for scRNA QC",
+                    "scvi-tools plus a PyTorch build compatible with the target CPU/GPU runtime",
+                ],
+                "notes": ["Generated workflows are safe by default and keep approved: false until explicitly changed."],
+            },
             "stop_on_failure": True,
             "execution": {"mode": "plan_then_execute", "approved": False},
             "stages": [
@@ -103,7 +123,7 @@ def build_scrna_scvi_workflow_spec(prompt: str, input_path: str | None, outdir: 
                     "name": "scrna_qc",
                     "spec": {
                         "run": {"name": "scrna_qc", "type": "scrna_qc", "skill": "single-cell-rna-qc"},
-                        "inputs": {"path": input_path or "", "type": inspection["type"], "inspection": inspection},
+                        "inputs": {"path": selected_input or "", "type": input_type, "inspection": inspection},
                         "scrna_qc": {
                             "preserve_raw_counts": True,
                             "counts_layer": "counts",
@@ -158,13 +178,29 @@ def inspect_input_path(path: str | None) -> dict[str, Any]:
     result["exists"] = source.exists()
     if source.is_dir():
         fastq_files = [item for item in source.rglob("*") if item.is_file() and "".join(item.suffixes).lower().endswith((".fastq.gz", ".fq.gz"))]
+        fastq_pairs = detect_fastq_pairs(fastq_files)
+        h5ad_files = sorted(item for item in source.rglob("*.h5ad") if item.is_file())
         mtx_files = [item for item in source.rglob("*") if item.is_file() and "".join(item.suffixes).lower().endswith((".mtx", ".mtx.gz"))]
+        fasta_files = sorted(item for item in source.rglob("*") if item.is_file() and item.suffix.lower() in {".fa", ".fasta"})
+        gtf_files = sorted(item for item in source.rglob("*.gtf") if item.is_file())
         result["fastq_files"] = len(fastq_files)
+        result["fastq_pairs"] = len(fastq_pairs)
+        result["fastq_pair_examples"] = fastq_pairs[:10]
+        result["h5ad_files"] = len(h5ad_files)
+        result["h5ad_paths"] = [str(item) for item in h5ad_files[:20]]
         result["mtx_files"] = len(mtx_files)
+        result["reference_files"] = {
+            "fasta": [str(item) for item in fasta_files[:20]],
+            "gtf": [str(item) for item in gtf_files[:20]],
+        }
         result["children"] = len(list(source.iterdir()))
         if mtx_files:
             result["type"] = "10x_mtx"
             result["has_10x_mtx"] = True
+        elif h5ad_files:
+            result["type"] = "h5ad_dir"
+        elif fastq_files:
+            result["type"] = "fastq_dir"
     elif source.exists():
         result["size_bytes"] = source.stat().st_size
         if inferred == "h5ad":
@@ -180,6 +216,40 @@ def inspect_input_path(path: str | None) -> dict[str, Any]:
             except Exception as exc:
                 result["h5ad_warning"] = str(exc)
     return result
+
+
+def detect_fastq_pairs(fastq_files: list[Path]) -> list[dict[str, str]]:
+    by_name = {item.name: item for item in fastq_files}
+    pairs: list[dict[str, str]] = []
+    for r1 in sorted(fastq_files):
+        mate_name = fastq_mate_name(r1.name)
+        if not mate_name or mate_name not in by_name:
+            continue
+        pairs.append({"sample": fastq_sample_name(r1.name), "fastq_1": str(r1), "fastq_2": str(by_name[mate_name])})
+    return pairs
+
+
+def fastq_mate_name(name: str) -> str | None:
+    replacements = [
+        (r"_R1(_\d+)?\.(fastq|fq)\.gz$", r"_R2\1.\2.gz"),
+        (r"_1\.(fastq|fq)\.gz$", r"_2.\1.gz"),
+    ]
+    for pattern, replacement in replacements:
+        if re.search(pattern, name):
+            return re.sub(pattern, replacement, name)
+    return None
+
+
+def fastq_sample_name(name: str) -> str:
+    for pattern in [r"_R1(_\d+)?\.(fastq|fq)\.gz$", r"_1\.(fastq|fq)\.gz$"]:
+        name = re.sub(pattern, "", name)
+    return name
+
+
+def select_primary_input_path(input_path: str | None, inspection: dict[str, Any], skill: str) -> str | None:
+    if skill in {"single-cell-rna-qc", "scvi-universal"} and inspection.get("h5ad_paths"):
+        return str(inspection["h5ad_paths"][0])
+    return input_path
 
 
 def infer_execution_profile(prompt: str) -> str:
@@ -200,12 +270,17 @@ def infer_nfcore_pipeline(prompt: str, input_path: str | None = None) -> str:
     return "rnaseq"
 
 
-def infer_nfcore_params(pipeline: str, input_path: str | None, outdir: str) -> dict[str, Any]:
+def infer_nfcore_params(pipeline: str, input_path: str | None, outdir: str, inspection: dict[str, Any] | None = None) -> dict[str, Any]:
     params: dict[str, Any] = {"outdir": outdir}
     if input_path:
         params["input"] = input_path
     if pipeline in {"rnaseq", "atacseq"}:
         params.setdefault("genome", "GRCh38")
+        references = (inspection or {}).get("reference_files", {})
+        if references.get("fasta"):
+            params["fasta"] = references["fasta"][0]
+        if references.get("gtf"):
+            params["gtf"] = references["gtf"][0]
     if pipeline == "rnaseq":
         params.setdefault("aligner", "star_salmon")
     return params
@@ -217,3 +292,31 @@ def infer_scvi_model(prompt: str) -> str:
         if model.lower() in text:
             return model
     return "SCVI"
+
+
+def requirements_for_skill(skill: str) -> dict[str, list[str]]:
+    if skill == "nf-core-universal":
+        return {
+            "software": [
+                "Java 17+ with Nextflow on PATH",
+                "nf-core CLI",
+                "Singularity or Apptainer on HPC, or an explicitly selected container profile",
+                "git access or pre-cached nf-core pipelines",
+            ],
+            "notes": ["Run `omics-codex inspect-env --kind nfcore` before real execution."],
+        }
+    if skill == "scvi-universal":
+        return {
+            "software": [
+                "scvi-tools in the active Python/UV environment",
+                "PyTorch build compatible with the requested CPU/GPU runtime",
+                "anndata and scanpy",
+            ],
+            "notes": ["Run `omics-codex inspect-env --kind scvi` before training."],
+        }
+    if skill == "single-cell-rna-qc":
+        return {
+            "software": ["scverse stack with anndata and scanpy"],
+            "notes": ["QC plans are generated with `approved: false` unless explicitly changed."],
+        }
+    return {"software": [], "notes": []}

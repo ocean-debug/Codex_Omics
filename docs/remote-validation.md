@@ -81,9 +81,10 @@ results:
 ```bash
 export CODEX_OMICS_DATA_DIR=/path/to/data/test
 export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
-bash scripts/acceptance/run_scvi.sh
-bash scripts/acceptance/run_bulk_rna.sh
-bash scripts/acceptance/run_atac.sh
+export CODEX_OMICS_NFCORE_PROFILE=singularity
+export CODEX_OMICS_MAX_CPUS=12
+export CODEX_OMICS_MAX_MEMORY=48.GB
+bash scripts/acceptance/run_all.sh
 ```
 
 The current reference run completed real scVI subset training and bulk RNA
@@ -91,4 +92,6 @@ The current reference run completed real scVI subset training and bulk RNA
 provenance; execution depends on both network/pipeline cache availability and
 `nf-core/atacseq` compatibility with the installed Nextflow version. If it
 fails, the manifest should classify the failure and preserve the saved command
-plus Nextflow logs.
+plus Nextflow logs. The aggregate `summary.json` treats scVI and bulk RNA as
+required completed checks; ATAC is accepted only when it completes or records a
+known classified pipeline pull, config parse, or container pull failure.

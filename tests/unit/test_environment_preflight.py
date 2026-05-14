@@ -58,6 +58,25 @@ def test_nfcore_environment_blocks_missing_runtime_components() -> None:
     assert any("activate-nextflow.sh" in hint for hint in result["install_hints"])
 
 
+def test_nfcore_environment_blocks_unparseable_java_version() -> None:
+    result = assess_nfcore_environment(
+        {
+            "java": {"available": True, "stdout": "java version unknown", "stderr": ""},
+            "nextflow": {"available": True},
+            "nf-core": {"available": True},
+            "git": {"available": True},
+            "singularity": {"available": True},
+            "apptainer": {"available": False},
+            "docker": {"available": False},
+            "environment": {"NXF_HOME": "/tmp/nxf"},
+        }
+    )
+
+    assert result["status"] == "blocked"
+    assert result["blockers"][0]["error_type"] == "UnsupportedRuntime"
+    assert result["blockers"][0]["failed_step"] == "preflight_java"
+
+
 def test_nextflow_github_timeout_is_classified_as_pipeline_pull() -> None:
     failure = classify_nextflow_failure("https://github.com/nf-core/atacseq.git: connection failed\nConnection timed out github.com")
 

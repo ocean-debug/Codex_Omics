@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Hardened real-data acceptance aggregation: `scripts/acceptance/run_all.sh` now runs all projects, writes per-project exit codes, produces a machine-readable `summary.json`, and exits nonzero when required `scvi` or `bulk_rna` checks fail.
+- Added an explicit ATAC acceptance policy: ATAC may remain failed/blocked only when the manifest contains a known classified pipeline pull, config-parse, or container-pull failure with preserved commands and logs.
+- Improved nf-core environment consistency by treating unparseable Java versions as blockers in both `inspect-env --kind nfcore` and runtime preflight.
+- Strengthened acceptance input preparation with early structured errors for missing h5ad, missing paired FASTQ files, missing genome FASTA/GTF, and empty samplesheets.
+- Extended FASTQ discovery to common `_1/_2` and `_R1/_R2` naming with `.fq.gz` or `.fastq.gz`.
+- Improved router-generated specs from real input directories, including FASTQ pair counts, h5ad discovery, reference file hints, safe `approved: false` defaults, and software requirements.
+
 ## 0.2.0
 
 - Added structured environment diagnostics for `omics-codex inspect-env --kind scvi|nfcore|all`, including `status`, `blockers`, `warnings`, and install hints.

@@ -32,9 +32,11 @@ def test_router_builds_scanvi_spec() -> None:
 
 def test_inspect_input_path_fastq_dir(tmp_path) -> None:
     (tmp_path / "S1_R1.fastq.gz").write_text("", encoding="utf-8")
+    (tmp_path / "S1_R2.fastq.gz").write_text("", encoding="utf-8")
     result = inspect_input_path(str(tmp_path))
     assert result["exists"]
-    assert result["fastq_files"] == 1
+    assert result["fastq_files"] == 2
+    assert result["fastq_pairs"] == 1
 
 
 def test_inspect_input_path_10x_mtx_dir(tmp_path) -> None:
@@ -49,3 +51,30 @@ def test_router_builds_scrna_scvi_workflow_spec() -> None:
     assert spec["workflow"]["execution"]["approved"] is False
     assert [stage["name"] for stage in spec["workflow"]["stages"]] == ["scrna_qc", "scvi"]
     assert spec["workflow"]["stages"][1]["connect_from"]["stage"] == "scrna_qc"
+
+
+def test_router_generates_nfcore_spec_from_fastq_directory(tmp_path) -> None:
+    (tmp_path / "sample_1.fq.gz").write_text("", encoding="utf-8")
+    (tmp_path / "sample_2.fq.gz").write_text("", encoding="utf-8")
+    (tmp_path / "ref.fa").write_text("", encoding="utf-8")
+    (tmp_path / "genes.gtf").write_text("", encoding="utf-8")
+
+    spec = build_run_spec("Analyze these sequencing reads", input_path=str(tmp_path))
+
+    assert spec["run"]["skill"] == "nf-core-universal"
+    assert spec["execution"]["approved"] is False
+    assert spec["inputs"]["inspection"]["fastq_pairs"] == 1
+    assert spec["nfcore"]["profile"] == "singularity"
+    assert spec["nfcore"]["params"]["fasta"].endswith("ref.fa")
+    assert "Java 17+" in spec["requirements"]["software"][0]
+
+
+def test_router_generates_scvi_spec_from_h5ad_directory(tmp_path) -> None:
+    (tmp_path / "adata.h5ad").write_text("", encoding="utf-8")
+
+    spec = build_run_spec("Create an scVI latent embedding", input_path=str(tmp_path))
+
+    assert spec["run"]["skill"] == "scvi-universal"
+    assert spec["inputs"]["inspection"]["h5ad_files"] == 1
+    assert spec["inputs"]["path"].endswith("adata.h5ad")
+    assert "scvi-tools" in spec["requirements"]["software"][0]

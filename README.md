@@ -66,6 +66,8 @@ It contains the plugin descriptor, skills, schemas, and helper scripts. See [doc
 ```bash
 omics-codex --help
 omics-codex validate --config examples/scrna_qc/omics_run_spec.yaml
+omics-codex inspect-data --input /path/to/input
+omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --out omics_run_spec.json
 omics-codex nfcore build-command --config examples/nfcore_rnaseq/omics_run_spec.yaml
 omics-codex scrna-qc run --config examples/scrna_qc/omics_run_spec.yaml
 omics-codex scvi list-models
@@ -103,5 +105,16 @@ RUN_HEAVY_OMICS=1 python -m pytest tests/heavy -q
 `envs/activate-nextflow.sh` sets project-local Java/Nextflow and a project-local Singularity cache. nf-core Singularity examples use `envs/nextflow-singularity.config` for resumed validation and longer image pull timeouts.
 
 Real-data acceptance script templates are available under `scripts/acceptance/`. They use `CODEX_OMICS_DATA_DIR` and `CODEX_OMICS_RESULT_DIR` instead of hard-coded site paths, and keep generated data/results out of Git.
+
+```bash
+export CODEX_OMICS_DATA_DIR=/path/to/data/test
+export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
+export CODEX_OMICS_NFCORE_PROFILE=singularity
+export CODEX_OMICS_MAX_CPUS=12
+export CODEX_OMICS_MAX_MEMORY=48.GB
+bash scripts/acceptance/run_all.sh
+```
+
+`run_all.sh` continues through scVI, bulk RNA, and ATAC checks, then writes `summary.json`. scVI and bulk RNA must complete; ATAC is allowed to remain failed or blocked only when the manifest contains a classified pipeline pull, config parse, or container pull failure with saved commands and logs.
 
 See [docs/acceptance-matrix.md](docs/acceptance-matrix.md) and [docs/release-checklist.md](docs/release-checklist.md) for the current support boundary and release process.

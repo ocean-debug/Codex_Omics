@@ -48,4 +48,4 @@ EOF
 omics-codex inspect-env --kind scvi | tee "${OUT}/inspect_env.json"
 omics-codex scvi validate --config "${OUT}/scvi_real_subset.yaml" | tee "${OUT}/scvi_validate.json"
 omics-codex scvi train --config "${OUT}/scvi_real_subset.yaml" | tee "${OUT}/scvi_train.json"
-omics-codex report --manifest "${OUT}/run_manifest.json" > "${OUT}/report.md" || true
+omics-codex report --manifest "${OUT}/run_manifest.json" > "${OUT}/report.md"

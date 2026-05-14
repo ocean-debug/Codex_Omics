@@ -112,11 +112,20 @@ def runtime_blockers(spec: dict[str, Any]) -> list[dict[str, Any]]:
         )
     java_text = _java_version_text()
     java_major = _java_major_version(java_text)
-    if java_major is None:
+    if not java_text:
         errors.append(
             {
                 "error_type": "MissingSoftware",
-                "message": "Java is not available or its version could not be detected.",
+                "message": "Java is not available on PATH.",
+                "suggested_fix": "Install Java 17+ and expose it through JAVA_HOME or PATH before running Nextflow.",
+                "failed_step": "preflight_java",
+            }
+        )
+    elif java_major is None:
+        errors.append(
+            {
+                "error_type": "UnsupportedRuntime",
+                "message": "Java is available, but its version could not be parsed; Nextflow requires Java 17+.",
                 "suggested_fix": "Install Java 17+ and expose it through JAVA_HOME or PATH before running Nextflow.",
                 "failed_step": "preflight_java",
             }

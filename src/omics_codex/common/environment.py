@@ -159,7 +159,16 @@ def assess_nfcore_environment(payload: dict[str, Any]) -> dict[str, Any]:
         blockers.append(missing("java", "Install Java 17+ and expose it through JAVA_HOME/PATH before running Nextflow."))
     else:
         major = parse_java_major(payload.get("java", {}))
-        if major is not None and major < 17:
+        if major is None:
+            blockers.append(
+                {
+                    "error_type": "UnsupportedRuntime",
+                    "message": "Java is available, but its version could not be parsed; Nextflow requires Java 17+.",
+                    "suggested_fix": "Activate envs/activate-nextflow.sh or install Java 17+ for this project.",
+                    "failed_step": "preflight_java",
+                }
+            )
+        elif major < 17:
             blockers.append(
                 {
                     "error_type": "UnsupportedRuntime",
