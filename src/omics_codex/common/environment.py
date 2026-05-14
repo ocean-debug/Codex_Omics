@@ -53,6 +53,7 @@ def inspect_environment(kind: str = "all") -> dict[str, Any]:
         result["nfcore"]["environment"] = {
             "JAVA_HOME": os.environ.get("JAVA_HOME", ""),
             "NXF_HOME": os.environ.get("NXF_HOME", ""),
+            "NXF_SYNTAX_PARSER": os.environ.get("NXF_SYNTAX_PARSER", ""),
             "NXF_SINGULARITY_CACHEDIR": os.environ.get("NXF_SINGULARITY_CACHEDIR", ""),
             "NXF_APPTAINER_CACHEDIR": os.environ.get("NXF_APPTAINER_CACHEDIR", ""),
             "PATH": os.environ.get("PATH", ""),

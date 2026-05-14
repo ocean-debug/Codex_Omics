@@ -90,3 +90,30 @@ def test_nextflow_config_parse_failure_is_not_misclassified_as_java() -> None:
 
     assert failure["classification"] == "pipeline_config_parse"
     assert failure["error_type"] == "PipelineConfigParseFailed"
+
+
+def test_nextflow_atac_missing_read_length_is_classified_as_input() -> None:
+    failure = classify_nextflow_failure(
+        "ERROR ~ Both '--read_length' and '--macs_gsize' not specified! Please specify either to infer MACS2 genome size for peak calling."
+    )
+
+    assert failure["classification"] == "input_or_parameter"
+    assert failure["error_type"] == "PipelineInputFailed"
+
+
+def test_nextflow_container_timeout_is_classified_as_container_pull() -> None:
+    failure = classify_nextflow_failure(
+        "nf-core/atacseq failed. Failed to pull singularity image "
+        "https://depot.galaxyproject.org/singularity/trim-galore:0.6.7 "
+        "FATAL: read tcp connection timed out"
+    )
+
+    assert failure["classification"] == "container_pull"
+    assert failure["error_type"] == "ContainerPullFailed"
+
+
+def test_nextflow_samplesheet_check_is_classified_as_input() -> None:
+    failure = classify_nextflow_failure("ERROR: Please check samplesheet -> Replicate ids must start with 1..<num_replicates>!")
+
+    assert failure["classification"] == "input_or_parameter"
+    assert failure["error_type"] == "PipelineInputFailed"

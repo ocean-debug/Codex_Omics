@@ -156,8 +156,7 @@ def prepare_atac() -> dict[str, Any]:
         dst2 = subset_dir / r2.name
         subset_fastq(r1, dst1)
         subset_fastq(r2, dst2)
-        match = re.match(r"(\d+)-", sample)
-        rows.append({"sample": sample, "fastq_1": str(dst1), "fastq_2": str(dst2), "replicate": match.group(1) if match else "1"})
+        rows.append({"sample": sample, "fastq_1": str(dst1), "fastq_2": str(dst2), "replicate": "1"})
     sheet = out / "samplesheet.csv"
     write_csv(sheet, ["sample", "fastq_1", "fastq_2", "replicate"], rows)
     return write_summary(out, {"project": "atac", "reads_per_fastq": READS_PER_FASTQ, "samples": len(rows), "samplesheet": str(sheet), **genome})

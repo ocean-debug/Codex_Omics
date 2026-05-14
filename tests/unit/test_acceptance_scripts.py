@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import gzip
 from pathlib import Path
 
 import pytest
@@ -115,3 +116,39 @@ def test_prepare_inputs_reports_empty_bulk_rna_data_as_structured_error(tmp_path
     payload = json.loads(completed.stderr)
     assert payload["error_type"] == "InputPreparationFailed"
     assert "FASTQ input directory" in payload["message"]
+
+
+def test_prepare_atac_samplesheet_uses_replicate_one_per_unique_sample(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    atac = data / "nf-core" / "atac"
+    genome = data / "nf-core" / "genome"
+    atac.mkdir(parents=True)
+    genome.mkdir(parents=True)
+    (genome / "genome.fa").write_text(">chr1\nACGT\n", encoding="utf-8")
+    (genome / "genes.gtf").write_text("chr1\ttest\tgene\t1\t4\t.\t+\t.\tgene_id \"g1\";\n", encoding="utf-8")
+    for sample in ["1-WT_combined", "2-KO_combined"]:
+        for read in ["R1", "R2"]:
+            with gzip.open(atac / f"{sample}_{read}.fastq.gz", "wt", encoding="utf-8") as handle:
+                handle.write("@read\nACGT\n+\n!!!!\n")
+    env = {
+        **os.environ,
+        "CODEX_OMICS_ROOT": str(tmp_path),
+        "CODEX_OMICS_DATA_DIR": str(data),
+        "CODEX_OMICS_RESULT_DIR": str(tmp_path / "result"),
+        "CODEX_OMICS_READS_PER_FASTQ": "1",
+    }
+
+    completed = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "acceptance" / "prepare_test_inputs.py"), "atac"],
+        cwd=REPO_ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    sheet = tmp_path / "result" / "atac" / "samplesheet.csv"
+    rows = sheet.read_text(encoding="utf-8").splitlines()
+    assert rows[1].endswith(",1")
+    assert rows[2].endswith(",1")

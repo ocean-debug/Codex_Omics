@@ -194,13 +194,6 @@ def _nextflow_failure_error(returncode: int, outdir: Path) -> dict[str, Any]:
 
 def classify_nextflow_failure(text: str) -> dict[str, str]:
     lowered = text.lower()
-    if ("github.com" in lowered or "nf-core/" in lowered) and any(token in lowered for token in ["connection failed", "connection timed out", "could not resolve host", "unable to access"]):
-        return {
-            "classification": "pipeline_pull_or_network",
-            "error_type": "PipelinePullFailed",
-            "message": "Nextflow could not pull the nf-core pipeline from GitHub or the remote pipeline source.",
-            "suggested_fix": "Pre-cache the pipeline on a node with network access using `nextflow pull nf-core/<pipeline>`, then rerun the saved command.sh with -resume.",
-        }
     if any(token in lowered for token in ["singularity", "apptainer", "container"]) and any(token in lowered for token in ["failed to pull", "image pull", "download", "timeout"]):
         return {
             "classification": "container_pull",
@@ -208,7 +201,28 @@ def classify_nextflow_failure(text: str) -> dict[str, str]:
             "message": "Nextflow failed while pulling or preparing a container image.",
             "suggested_fix": "Check the Singularity/Apptainer cache and network access, pre-pull required images if needed, then rerun with -resume.",
         }
+    if ("github.com" in lowered or "nf-core/" in lowered) and any(token in lowered for token in ["connection failed", "connection timed out", "could not resolve host", "unable to access"]):
+        return {
+            "classification": "pipeline_pull_or_network",
+            "error_type": "PipelinePullFailed",
+            "message": "Nextflow could not pull the nf-core pipeline from GitHub or the remote pipeline source.",
+            "suggested_fix": "Pre-cache the pipeline on a node with network access using `nextflow pull nf-core/<pipeline>`, then rerun the saved command.sh with -resume.",
+        }
     if any(token in lowered for token in ["validation of pipeline parameters failed", "unknown option", "unknown parameter", "missing required"]):
+        return {
+            "classification": "input_or_parameter",
+            "error_type": "PipelineInputFailed",
+            "message": "Nextflow rejected one or more pipeline inputs or parameters.",
+            "suggested_fix": "Inspect the saved command.sh and pipeline schema, fix the samplesheet or params, then rerun with -resume.",
+        }
+    if "please check samplesheet" in lowered or "samplesheet" in lowered and "error:" in lowered:
+        return {
+            "classification": "input_or_parameter",
+            "error_type": "PipelineInputFailed",
+            "message": "Nextflow rejected the pipeline samplesheet.",
+            "suggested_fix": "Inspect the saved samplesheet and nf-core schema, fix sample or replicate columns, then rerun with -resume.",
+        }
+    if "--read_length" in lowered and "--macs_gsize" in lowered and "not specified" in lowered:
         return {
             "classification": "input_or_parameter",
             "error_type": "PipelineInputFailed",

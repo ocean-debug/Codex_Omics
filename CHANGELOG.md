@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Set project-local Nextflow activation to `NXF_SYNTAX_PARSER=v1` for compatibility with nf-core pipelines that still use legacy config syntax.
+- Added ATAC acceptance auto-detection for `read_length`, with `CODEX_OMICS_ATAC_READ_LENGTH` and `CODEX_OMICS_ATAC_MACS_GSIZE` overrides.
+- Classified ATAC `--read_length` / `--macs_gsize`, samplesheet, and container-pull failures more precisely.
+- Added project-local Apptainer cache settings alongside Singularity cache settings.
+
 ## 0.2.1
 
 - Hardened real-data acceptance aggregation: `scripts/acceptance/run_all.sh` now runs all projects, writes per-project exit codes, produces a machine-readable `summary.json`, and exits nonzero when required `scvi` or `bulk_rna` checks fail.

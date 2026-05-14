@@ -60,6 +60,8 @@ def test_verify_pipeline_outputs(tmp_path) -> None:
 
 def test_run_nfcore_failed_execution_preserves_log_tails(tmp_path, monkeypatch) -> None:
     def fake_run(*args, **kwargs):
+        if "cwd" not in kwargs:
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
         (kwargs["cwd"] / ".nextflow.log").write_text("nextflow diagnostic\nroot cause", encoding="utf-8")
         return SimpleNamespace(returncode=1, stdout="stdout line", stderr="stderr root cause")
 

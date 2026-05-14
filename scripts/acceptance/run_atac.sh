@@ -10,6 +10,7 @@ export CODEX_OMICS_ROOT="${ROOT}" CODEX_OMICS_DATA_DIR="${DATA_DIR}" CODEX_OMICS
 NFCORE_PROFILE="${CODEX_OMICS_NFCORE_PROFILE:-singularity}"
 MAX_CPUS="${CODEX_OMICS_MAX_CPUS:-12}"
 MAX_MEMORY="${CODEX_OMICS_MAX_MEMORY:-48.GB}"
+ATAC_MACS_GSIZE="${CODEX_OMICS_ATAC_MACS_GSIZE:-}"
 
 python "${ROOT}/scripts/acceptance/prepare_test_inputs.py" atac | tee "${OUT}/prepare.log"
 
@@ -20,9 +21,38 @@ if [[ -z "${FASTA}" || -z "${GTF}" ]]; then
   exit 2
 fi
 
-cat > "${OUT}/atacseq_params.config" <<'EOF'
+if [[ -z "${ATAC_MACS_GSIZE}" ]]; then
+  ATAC_READ_LENGTH="${CODEX_OMICS_ATAC_READ_LENGTH:-$(python - "${OUT}/samplesheet.csv" <<'PY'
+import csv
+import gzip
+import sys
+from pathlib import Path
+
+with Path(sys.argv[1]).open(newline="", encoding="utf-8") as handle:
+    first = next(csv.DictReader(handle), None)
+if not first:
+    raise SystemExit("No ATAC samplesheet rows found.")
+fastq = Path(first["fastq_1"])
+with gzip.open(fastq, "rt", encoding="utf-8", errors="replace") as handle:
+    handle.readline()
+    sequence = handle.readline().strip()
+if not sequence:
+    raise SystemExit(f"Could not infer read length from {fastq}.")
+print(len(sequence))
+PY
+)}"
+fi
+
+cat > "${OUT}/atacseq_params.config" <<EOF
 params {
     skip_peak_qc = true
+EOF
+if [[ -n "${ATAC_MACS_GSIZE}" ]]; then
+  echo "    macs_gsize = '${ATAC_MACS_GSIZE}'" >> "${OUT}/atacseq_params.config"
+else
+  echo "    read_length = ${ATAC_READ_LENGTH}" >> "${OUT}/atacseq_params.config"
+fi
+cat >> "${OUT}/atacseq_params.config" <<'EOF'
 }
 EOF
 

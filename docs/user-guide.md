@@ -135,6 +135,9 @@ bash scripts/acceptance/run_all.sh
 
 Expected input layout is `nf-core/rna`, `nf-core/atac`, `nf-core/genome`, and `scvi` under `CODEX_OMICS_DATA_DIR`. Generated subsets, specs, manifests, logs, and reports are written under separate result subfolders. `summary.json` is the release gate: scVI and bulk RNA must complete; ATAC may remain failed/blocked only when the manifest has a known classified pipeline pull, config parse, or container pull failure with saved commands and logs.
 
+For ATAC acceptance, `run_atac.sh` infers `read_length` from the first FASTQ
+unless `CODEX_OMICS_ATAC_READ_LENGTH` or `CODEX_OMICS_ATAC_MACS_GSIZE` is set.
+
 ## Reports
 
 Render a report from any run manifest:

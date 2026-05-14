@@ -15,8 +15,10 @@ source .venv/bin/activate
 source envs/activate-nextflow.sh
 ```
 
-`envs/activate-nextflow.sh` exposes project-local Java/Nextflow and sets a
-project-local Singularity cache. nf-core Singularity runs should use
+`envs/activate-nextflow.sh` exposes project-local Java/Nextflow, sets
+`NXF_SYNTAX_PARSER=v1` for compatibility with older nf-core pipeline config
+syntax, and sets project-local Singularity/Apptainer caches. nf-core
+Singularity/Apptainer runs should use
 `envs/nextflow-singularity.config` so image pulls have a longer timeout and
 report/timeline files can be overwritten during resumed validation.
 
@@ -86,6 +88,12 @@ export CODEX_OMICS_MAX_CPUS=12
 export CODEX_OMICS_MAX_MEMORY=48.GB
 bash scripts/acceptance/run_all.sh
 ```
+
+For ATAC, the script infers `read_length` from the first FASTQ by default. Set
+`CODEX_OMICS_ATAC_READ_LENGTH` or `CODEX_OMICS_ATAC_MACS_GSIZE` to override the
+auto-detected MACS2 genome-size input strategy. If ATAC fails while pulling
+containers, pre-pull the reported image into `tools/nextflow/apptainer-cache`
+or rerun with `-resume` after network access is available.
 
 The current reference run completed real scVI subset training and bulk RNA
 `nf-core/rnaseq` subset execution. The ATAC run prepared inputs and command
