@@ -1,18 +1,54 @@
-# Codex Omics Skills
+# Codex Omics
 
-Codex Omics Skills is a standard-ready Codex plugin package with `omics-codex` as its execution backend for reproducible omics analysis workflows. It helps Codex move from research-only assistance to structured analysis planning, validation, execution, and reporting.
+Codex Omics is a Codex plugin for omics analysis. It helps Codex move beyond research assistance and ad hoc scripting into reproducible workflows: diagnose the environment, inspect input data, generate a safe analysis plan, execute approved stages, and produce manifests and reports.
 
-Current capabilities:
+The project has two layers:
 
-- nf-core / Nextflow planning, parameter validation, samplesheets, and command generation.
-- Single-cell RNA-seq QC with Scanpy/scverse conventions.
-- scvi-tools model discovery, validation, lightweight training, and downstream summaries.
-- Multi-stage workflow planning with safe defaults, manifests, and reports.
-- Skill templates for adding more omics workflows later.
+- `plugins/omics-analysis/`: the Codex plugin bundle, including plugin metadata, skills, schemas, references, and thin wrapper scripts.
+- `omics-codex`: the Python execution backend used by the plugin for environment diagnostics, spec generation, parameter validation, execution, manifests, and reports.
 
-## Install
+The plugin is the primary entry point. The CLI is the backend capability layer. Users can run the CLI directly for debugging, but this project is designed as an omics analysis plugin for Codex and other agent workflows, not as a standalone analysis platform.
 
-Clone the repository and install the CLI in an environment that already has the optional scientific stack you need:
+## Capabilities
+
+Codex Omics v0.4.0 focuses on three analysis tracks:
+
+- **nf-core / Nextflow**: inspect nf-core readiness, generate samplesheets, validate parameters, build Nextflow commands, and plan or run workflows such as `rnaseq`, `atacseq`, and `sarek`.
+- **single-cell RNA-seq QC**: read `.h5ad`, 10x H5, and 10x MTX inputs; run scRNA-seq QC; and save filtered AnnData, summaries, plots, manifests, and reports.
+- **scvi-tools**: discover available scVI family models, validate AnnData, run lightweight training, and summarize downstream outputs such as latent embeddings, neighbors, UMAP, Leiden clusters, and model metadata.
+
+It also provides:
+
+- `doctor` environment diagnostics for UV `.venv`, standard `venv`, conda/mamba, and system Python environments.
+- `inspect-data` input inspection for h5ad files, FASTQ directories, reference files, and related omics inputs.
+- `route` and `template` commands for generating safe run specs or workflow specs from natural language or common templates.
+- `workflow plan|run|resume|status` for multi-stage workflow orchestration.
+- `report` for rendering reports from manifests.
+
+## Safe Defaults
+
+Generated workflows default to:
+
+```yaml
+approved: false
+```
+
+This means Codex should only generate plans, commands, output paths, log paths, and resume strategies by default. Real execution, heavy dependency installation, long training runs, and Nextflow workflows require explicit user approval.
+
+The project does not install these heavy dependencies automatically:
+
+- scvi-tools
+- GPU PyTorch
+- Java
+- Nextflow
+- nf-core
+- Singularity / Apptainer
+
+`omics-codex doctor` diagnoses and suggests next steps. An agent should only assist with installation after the user explicitly approves it, and the installation method should match the active environment type.
+
+## Quick Start
+
+Clone the repository and install the backend CLI:
 
 ```bash
 git clone https://github.com/ocean-debug/Codex_Omics.git
@@ -20,136 +56,201 @@ cd Codex_Omics
 python -m pip install -e ".[dev,nfcore,scverse]"
 ```
 
-`scvi-tools`, GPU PyTorch, Java, Nextflow, nf-core, Singularity, and Apptainer are environment-managed dependencies. They are not forced into the default install because GPU and HPC stacks are site-specific.
-
-Check the active environment before running real analyses or installing dependencies:
+Diagnose the active environment first:
 
 ```bash
 omics-codex doctor --json
 ```
 
-Codex Omics detects UV `.venv`, standard `venv`, conda/mamba, and system Python environments. It reports missing components and matching install commands, but it does not install scVI, GPU PyTorch, Java, Nextflow, nf-core, or container tools unless the user explicitly approves.
-
-## Quick Start
-
-The v0.3 user path is:
-
-```text
-doctor -> inspect-data -> route/template -> workflow plan -> approved run -> report
-```
-
-Start by checking the active environment and input directory:
+Inspect input data:
 
 ```bash
-omics-codex inspect-env --kind all
-omics-codex doctor --json
 omics-codex inspect-data --input /path/to/input
 ```
 
-Generate a safe draft workflow from natural language. Generated specs keep `approved: false`.
+Generate a safe workflow from natural language:
 
 ```bash
 omics-codex route \
-  --prompt "Create a bulk RNA workflow" \
+  --prompt "Create a bulk RNA-seq workflow" \
   --input /path/to/fastq_dir \
   --outdir results/bulk_rna \
   --out bulk_rna.workflow.json
+```
+
+Plan only, without executing analysis stages:
+
+```bash
 omics-codex workflow plan --config bulk_rna.workflow.json
 ```
 
-Or start from a common template:
+Inspect status and render a report:
 
 ```bash
-omics-codex template list
-omics-codex template create --name scrna-qc-scvi --input /path/to/cells.h5ad --outdir results/scrna_scvi --out scrna_scvi.workflow.json
+omics-codex workflow status --config bulk_rna.workflow.json
+omics-codex report --manifest results/bulk_rna/workflow_manifest.json
 ```
 
-The bundled demo also plans safely. It writes a workflow manifest and report, but does not run analysis stages because the example is not approved by default.
+## Codex Plugin Usage
 
-```bash
-omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
-```
-
-Inspect the generated plan:
-
-```bash
-omics-codex workflow status --config examples/workflows/scrna_qc_scvi.yaml
-omics-codex report --manifest results/workflows/scrna_qc_scvi/workflow_manifest.json
-```
-
-Only run the approved demo when you intentionally want to execute the synthetic QC-to-SCVI workflow:
-
-```bash
-omics-codex workflow run --config examples/workflows/scrna_qc_scvi.approved.yaml
-```
-
-## Codex Plugin
-
-The Codex plugin lives inside this repository and can be packaged as a standard plugin zip:
+The plugin directory in this repository is:
 
 ```text
 plugins/omics-analysis/
 ```
 
-It contains the plugin descriptor, skills, schemas, and helper scripts. See [docs/plugin-package.md](docs/plugin-package.md) for building `codex-omics-plugin-v0.4.0.zip`, and [docs/plugin-installation.md](docs/plugin-installation.md) for repo-local loading.
+It contains:
+
+```text
+.codex-plugin/plugin.json
+skills/
+schemas/
+references/
+scripts/
+```
+
+Load `plugins/omics-analysis/` in a Codex environment that supports local plugin loading. The plugin guides Codex through the standard workflow:
+
+```text
+doctor -> inspect-data -> route/template -> workflow plan -> approved run -> report
+```
+
+Build the standard plugin package:
+
+```bash
+python scripts/release/build_plugin_package.py
+python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin-v0.4.0.zip
+```
+
+Related documentation:
+
+- [docs/plugin-installation.md](docs/plugin-installation.md)
+- [docs/plugin-package.md](docs/plugin-package.md)
+- [docs/agent-integration.md](docs/agent-integration.md)
 
 ## Common Commands
 
+Environment and data inspection:
+
 ```bash
-omics-codex --help
 omics-codex doctor --json
-omics-codex validate --config examples/scrna_qc/omics_run_spec.yaml
+omics-codex doctor --kind nfcore --json
+omics-codex doctor --kind scvi --json
 omics-codex inspect-data --input /path/to/input
-omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --outdir results/demo --out omics_run_spec.json
-omics-codex template list
-omics-codex template create --name bulk-rna --input /path/to/fastq_dir --out bulk_rna.workflow.json
-omics-codex nfcore build-command --config examples/nfcore_rnaseq/omics_run_spec.yaml
-omics-codex scrna-qc run --config examples/scrna_qc/omics_run_spec.yaml
-omics-codex scvi list-models
-omics-codex scvi validate --config examples/scvi/omics_run_spec.yaml
-omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
 ```
 
-For command details and expected outputs, see [docs/user-guide.md](docs/user-guide.md).
+Templates and routing:
+
+```bash
+omics-codex template list
+omics-codex template create --name bulk-rna --input /path/to/fastq --out bulk_rna.workflow.json
+omics-codex template create --name scrna-qc-scvi --input /path/to/cells.h5ad --out scrna_scvi.workflow.json
+omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --outdir results/demo --out workflow.json
+```
+
+nf-core:
+
+```bash
+omics-codex nfcore list
+omics-codex nfcore make-samplesheet --pipeline rnaseq --input /path/to/fastq --out samplesheet.csv
+omics-codex nfcore build-command --config examples/nfcore_rnaseq/omics_run_spec.yaml
+omics-codex nfcore run --config examples/nfcore_rnaseq/omics_run_spec.yaml
+```
+
+single-cell RNA-seq QC:
+
+```bash
+omics-codex scrna-qc run --config examples/scrna_qc/omics_run_spec.yaml
+```
+
+scVI:
+
+```bash
+omics-codex scvi list-models
+omics-codex scvi validate --config examples/scvi/omics_run_spec.yaml
+omics-codex scvi train --config examples/scvi/omics_run_spec.yaml
+```
+
+workflow:
+
+```bash
+omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
+omics-codex workflow run --config examples/workflows/scrna_qc_scvi.approved.yaml
+omics-codex workflow resume --config examples/workflows/scrna_qc_scvi.approved.yaml
+omics-codex workflow status --config examples/workflows/scrna_qc_scvi.yaml
+```
+
+## Environment Requirements
+
+Base environment:
+
+- Python 3.10+
+- `pip install -e ".[dev,nfcore,scverse]"`
+
+scRNA-seq QC requires:
+
+- `scanpy`
+- `anndata`
+
+scVI requires:
+
+- `scvi-tools`
+- `torch`
+- For GPU use: a PyTorch CUDA build that matches the machine GPU, driver, and CUDA stack.
+
+Real nf-core execution requires:
+
+- Java 17+
+- Nextflow
+- nf-core CLI
+- git
+- Singularity or Apptainer
+- Network access to nf-core pipelines, or pre-cached pipelines
+
+See [docs/environment-setup.md](docs/environment-setup.md) for UV, venv, conda/mamba, and HPC setup notes.
 
 ## Validation
 
-This project is developed on Windows but validated on a remote Linux/HPC environment. The generic validation contract is documented in [docs/remote-validation.md](docs/remote-validation.md).
-
-Default validation:
+Default tests:
 
 ```bash
-source .venv/bin/activate
-source envs/activate-nextflow.sh
 python -m pytest tests/smoke -q
 python -m pytest tests/unit -q
 python -m pytest tests/integration -q
-omics-codex inspect-env --kind nfcore
-omics-codex inspect-env --kind scvi
+omics-codex doctor --json
 omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
 ```
 
-Heavy checks are opt-in:
+Release checks:
 
 ```bash
-source .venv/bin/activate
-source envs/activate-nextflow.sh
-RUN_HEAVY_OMICS=1 python -m pytest tests/heavy -q
+python scripts/release/build_plugin_package.py
+python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin-v0.4.0.zip
 ```
 
-`envs/activate-nextflow.sh` sets project-local Java/Nextflow and a project-local Singularity cache. nf-core Singularity examples use `envs/nextflow-singularity.config` for resumed validation and longer image pull timeouts.
+Heavy tests are opt-in. Real Nextflow runs, GPU scVI family training, and large real-data acceptance checks require explicit user approval.
 
-Real-data acceptance script templates are available under `scripts/acceptance/`. They use `CODEX_OMICS_DATA_DIR` and `CODEX_OMICS_RESULT_DIR` instead of hard-coded site paths, and keep generated data/results out of Git.
+## Current Scope
 
-```bash
-export CODEX_OMICS_DATA_DIR=/path/to/data/test
-export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
-export CODEX_OMICS_NFCORE_PROFILE=singularity
-export CODEX_OMICS_MAX_CPUS=12
-export CODEX_OMICS_MAX_MEMORY=48.GB
-bash scripts/acceptance/run_all.sh
-```
+Codex Omics is currently suitable for small, reproducible, auditable omics workflows:
 
-`run_all.sh` continues through scVI, bulk RNA, and ATAC checks, then writes `summary.json`. scVI and bulk RNA must complete; ATAC is allowed to remain failed or blocked only when the manifest contains a classified pipeline pull, config parse, or container pull failure with saved commands and logs.
+- It can help Codex generate run specs, workflow specs, commands, samplesheets, manifests, and reports.
+- It can run lightweight scRNA-seq QC and scVI workflows.
+- It can plan and, when the environment is ready, execute nf-core workflows.
+- It records failure reasons, log paths, commands, and suggested next steps.
 
-See [docs/acceptance-matrix.md](docs/acceptance-matrix.md) and [docs/release-checklist.md](docs/release-checklist.md) for the current support boundary and release process.
+It is not a fully automatic platform that guarantees every dataset, every pipeline, or every HPC environment will run successfully without user preparation. Real execution still depends on input data quality, references, HPC permissions, network access, container cache availability, GPU/PyTorch compatibility, and nf-core pipeline availability.
+
+## Documentation
+
+- [docs/user-guide.md](docs/user-guide.md): user commands and expected inputs/outputs
+- [docs/environment-setup.md](docs/environment-setup.md): UV, venv, conda/mamba, and HPC setup
+- [docs/plugin-installation.md](docs/plugin-installation.md): repo-local plugin loading
+- [docs/plugin-package.md](docs/plugin-package.md): standard plugin package build and checks
+- [docs/agent-integration.md](docs/agent-integration.md): Codex and agent behavior contract
+- [docs/acceptance-matrix.md](docs/acceptance-matrix.md): supported and unsupported capabilities
+- [docs/release-checklist.md](docs/release-checklist.md): release checklist
+
+## License
+
+MIT
