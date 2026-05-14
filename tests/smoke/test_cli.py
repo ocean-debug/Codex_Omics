@@ -74,3 +74,10 @@ def test_cli_template_list() -> None:
     assert completed.returncode == 0
     assert '"bulk-rna"' in completed.stdout
     assert '"scrna-qc-scvi"' in completed.stdout
+
+
+def test_cli_doctor_json() -> None:
+    completed = subprocess.run([sys.executable, "-m", "omics_codex", "doctor", "--json"], text=True, capture_output=True, check=False)
+    assert completed.returncode == 0
+    assert '"install_policy"' in completed.stdout
+    assert '"python_environment"' in completed.stdout

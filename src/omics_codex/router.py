@@ -258,10 +258,10 @@ def user_path_steps(kind: str, out_path: str, result_dir: str, skill: str) -> di
     manifest_name = "workflow_manifest.json" if kind == "workflow" else "run_manifest.json"
     manifest_path = f"{result_dir.rstrip('/')}/{manifest_name}"
     return {
-        "summary": "inspect-env -> inspect-data -> route/template -> plan/validate -> approved run -> report",
+        "summary": "doctor -> inspect-data -> route/template -> plan/validate -> approved run -> report",
         "safe_default": "Generated specs keep approved: false. Review and explicitly set approved: true before real execution.",
         "commands": [
-            f"omics-codex inspect-env --kind {env_kind}",
+            f"omics-codex doctor --kind {env_kind} --json",
             "omics-codex inspect-data --input <input-path>",
             plan_command,
             run_command,
@@ -419,7 +419,7 @@ def requirements_for_skill(skill: str) -> dict[str, list[str]]:
                 "Singularity or Apptainer on HPC, or an explicitly selected container profile",
                 "git access or pre-cached nf-core pipelines",
             ],
-            "notes": ["Run `omics-codex inspect-env --kind nfcore` before real execution."],
+            "notes": ["Run `omics-codex doctor --kind nfcore --json` before real execution."],
         }
     if skill == "scvi-universal":
         return {
@@ -428,11 +428,11 @@ def requirements_for_skill(skill: str) -> dict[str, list[str]]:
                 "PyTorch build compatible with the requested CPU/GPU runtime",
                 "anndata and scanpy",
             ],
-            "notes": ["Run `omics-codex inspect-env --kind scvi` before training."],
+            "notes": ["Run `omics-codex doctor --kind scvi --json` before training."],
         }
     if skill == "single-cell-rna-qc":
         return {
             "software": ["scverse stack with anndata and scanpy"],
-            "notes": ["QC plans are generated with `approved: false` unless explicitly changed."],
+            "notes": ["Run `omics-codex doctor --kind scrna_qc --json`; QC plans are generated with `approved: false` unless explicitly changed."],
         }
     return {"software": [], "notes": []}

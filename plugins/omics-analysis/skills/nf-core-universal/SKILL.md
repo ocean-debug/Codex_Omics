@@ -8,7 +8,7 @@ description: Plan, configure, validate, run, monitor, and summarize any nf-core 
 ## Required workflow
 
 1. Create or read `omics_run_spec.yaml`. For common starts, prefer `omics-codex template create --name bulk-rna|atac` or `omics-codex route --prompt ... --input ... --outdir ...`.
-2. Inspect environment with `omics-codex inspect-env --kind nfcore`.
+2. Inspect environment with `omics-codex doctor --kind nfcore --json`.
 3. Discover or inspect the pipeline with `omics-codex nfcore list` or `omics-codex nfcore inspect <pipeline>`.
 4. Fetch the pipeline schema and validate params.
 5. Generate or validate samplesheets; use enhanced adapters for `rnaseq`, `sarek`, and `atacseq` when possible.
@@ -33,6 +33,7 @@ description: Plan, configure, validate, run, monitor, and summarize any nf-core 
 
 ```bash
 omics-codex nfcore list
+omics-codex doctor --kind nfcore --json
 omics-codex template create --name bulk-rna --input fastq/ --outdir results/bulk_rna --out bulk_rna.workflow.json
 omics-codex workflow plan --config bulk_rna.workflow.json
 omics-codex nfcore inspect rnaseq

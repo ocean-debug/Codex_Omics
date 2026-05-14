@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from .errors import InputNotFound, OmicsError
@@ -10,6 +11,9 @@ def repo_root() -> Path:
 
 
 def plugin_root() -> Path:
+    configured = os.environ.get("CODEX_OMICS_PLUGIN_ROOT")
+    if configured:
+        return Path(configured).expanduser().resolve()
     return repo_root() / "plugins" / "omics-analysis"
 
 

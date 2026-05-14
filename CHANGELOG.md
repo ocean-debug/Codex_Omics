@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.4.0
+
+- Added `omics-codex doctor --json` for plugin backend readiness, Python environment type detection, task status, and install policy guidance.
+- Added UV, venv, conda/mamba, and system Python-specific installation hints while keeping heavy dependencies opt-in.
+- Added packaged schema resources so run-spec validation can work outside a full repo checkout.
+- Added standard plugin package build/check scripts and documentation for agent integration, environment setup, and plugin zip loading.
+- Updated agent and user documentation around plugin-first usage with `omics-codex` as the execution backend.
+
 ## 0.3.0
 
 - Added common safe-default templates for `bulk-rna`, `atac`, `scrna-qc`, `scrna-qc-scvi`, and `scvi`.

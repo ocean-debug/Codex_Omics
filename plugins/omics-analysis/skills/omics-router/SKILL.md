@@ -7,7 +7,7 @@ description: Route omics analysis requests to the correct Codex Omics skill and 
 
 ## Required workflow
 
-1. Inspect the user request, environment, input paths, and desired outputs with `omics-codex inspect-env --kind all` and `omics-codex inspect-data --input <path>` when a path is available.
+1. Inspect the user request, environment, input paths, and desired outputs with `omics-codex doctor --json` and `omics-codex inspect-data --input <path>` when a path is available.
 2. Route to exactly one executable skill unless the user asks for a multi-stage workflow:
    - raw FASTQ/BAM/CRAM, SRA/GEO, Nextflow, nf-core -> `nf-core-universal`;
    - h5ad/10x, scRNA-seq QC, mitochondrial filtering -> `single-cell-rna-qc`;
@@ -27,7 +27,7 @@ description: Route omics analysis requests to the correct Codex Omics skill and 
 ## Commands
 
 ```bash
-omics-codex inspect-env --kind all
+omics-codex doctor --json
 omics-codex inspect-data --input ./data
 omics-codex route --prompt prompt.txt --input ./data --outdir results/demo --out workflow.json
 omics-codex template list

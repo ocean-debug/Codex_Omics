@@ -1,11 +1,13 @@
 # Acceptance Matrix
 
-This matrix records the current v0.3 acceptance boundary for Codex Omics Skills.
+This matrix records the current v0.4 acceptance boundary for Codex Omics Skills.
 
 | Area | Supported | Default validation | Heavy-only | Not promised |
 | --- | --- | --- | --- | --- |
 | Workflow orchestration | Safe-by-default multi-stage `workflow plan/run/resume/status`, `scrna_qc -> scvi` handoff, aggregate manifest/report, failed stage manifests for expected and unexpected exceptions | Synthetic QC-to-SCVI workflow | Larger real datasets | Arbitrary DAG schedulers |
 | Router/templates | Input inspection plus safe spec generation from natural language or common templates: `bulk-rna`, `atac`, `scrna-qc`, `scrna-qc-scvi`, `scvi` | Route/template CLI generation with `approved: false` | Real user directory smoke checks | Perfect natural-language understanding |
+| Plugin package | Standard plugin zip with metadata, skills, schemas, references, scripts, and docs | Package build/check scripts and forbidden-path scan | Manual loading in Codex app | Marketplace publication |
+| Environment doctor | UV, venv, conda/mamba, and system Python detection with install hints | `omics-codex doctor --json` | Real cluster environment setup | Unapproved dependency installation |
 | nf-core | Registry, schema fetch, params fallback validation, command generation, `rnaseq/sarek/atacseq` samplesheets, output inventory, project-local Java/Nextflow activation, project-local Singularity cache/config, runtime blockers and Nextflow failure classification | Command generation, structured environment inspection, route/template specs, and output inventory | `nf-core/rnaseq` test profile and real bulk RNA subset with MultiQC inventory must complete when preflight passes; ATAC true execution is out of the v0.3 routine validation path | Every nf-core pipeline end-to-end |
 | scRNA QC | h5ad, 10x MTX, raw-count check, MAD/fixed filters, batch-aware summary, optional doublet/ambient planning notes | Synthetic h5ad and small 10x MTX fixture | Real 10x H5/large MTX | Full doublet/ambient correction by default |
 | scVI | SCVI train, curated adapter validation, latent/downstream outputs, model summaries, UV/GPU/PyTorch environment diagnostics | SCVI synthetic train, curated validation, and structured `inspect-env --kind scvi` | SCANVI/TOTALVI/PEAKVI/MULTIVI light training; real h5ad subset SCVI training | Biological interpretation |

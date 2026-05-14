@@ -7,7 +7,7 @@ description: Run reproducible single-cell RNA-seq QC and preprocessing for h5ad,
 
 ## Required workflow
 
-1. Inspect the environment with `omics-codex inspect-env --kind scrna_qc`.
+1. Inspect the environment with `omics-codex doctor --kind scrna_qc --json`.
 2. Create or read `omics_run_spec.yaml`; for a safe starting point, use `omics-codex template create --name scrna-qc`.
 3. Confirm input format: `.h5ad`, 10x `.h5`, or 10x MTX directory.
 4. Preserve raw counts in `adata.raw` and a counts layer when available.
@@ -18,7 +18,7 @@ description: Run reproducible single-cell RNA-seq QC and preprocessing for h5ad,
 ## Commands
 
 ```bash
-omics-codex inspect-env --kind scrna_qc
+omics-codex doctor --kind scrna_qc --json
 omics-codex template create --name scrna-qc --input cells.h5ad --outdir results/scrna_qc --out scrna_qc.json
 omics-codex scrna-qc run --config omics_run_spec.yaml
 ```

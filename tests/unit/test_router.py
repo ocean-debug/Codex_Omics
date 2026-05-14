@@ -52,7 +52,7 @@ def test_router_builds_scrna_scvi_workflow_spec() -> None:
     assert spec["workflow"]["execution"]["approved"] is False
     assert [stage["name"] for stage in spec["workflow"]["stages"]] == ["scrna_qc", "scvi"]
     assert spec["workflow"]["stages"][1]["connect_from"]["stage"] == "scrna_qc"
-    assert "inspect-env" in spec["codex_user_path"]["commands"][0]
+    assert "doctor" in spec["codex_user_path"]["commands"][0]
 
 
 def test_bulk_rna_workflow_does_not_route_to_scrna_scvi(tmp_path) -> None:

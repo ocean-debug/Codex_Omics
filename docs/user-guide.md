@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers the public v0.3 workflow for users who clone the repository and install the `omics-codex` CLI.
+This guide covers the public v0.4 workflow for users who load the Codex plugin package and use `omics-codex` as its backend.
 
 ## Setup
 
@@ -16,15 +16,15 @@ Check the CLI:
 
 ```bash
 omics-codex --help
-omics-codex inspect-env --kind all
+omics-codex doctor --json
 ```
 
-`inspect-env` returns a structured `status`, `blockers`, `warnings`, and `install_hints`. Fix blockers before running real workflows.
+`doctor` returns a structured `status`, detected environment type, task readiness, blockers, warnings, and install hints. Fix blockers before running real workflows.
 
 The recommended user path is:
 
 ```text
-inspect-env -> inspect-data -> route/template -> plan/validate -> approved run -> report
+doctor -> inspect-data -> route/template -> plan/validate -> approved run -> report
 ```
 
 Inspect data and generate a safe draft spec before running:
@@ -137,7 +137,7 @@ Before training, run:
 omics-codex inspect-env --kind scvi
 ```
 
-If GPU hardware is visible but `torch.cuda.is_available()` is false, install a CUDA-enabled PyTorch build that matches the node driver/CUDA stack. Codex Omics reports the mismatch and blocks only when the run explicitly requests GPU training.
+If GPU hardware is visible but `torch.cuda.is_available()` is false, install a CUDA-enabled PyTorch build that matches the node driver/CUDA stack. Codex Omics reports the mismatch and should ask before installing into UV, venv, or conda environments.
 
 ## Real-data acceptance scripts
 

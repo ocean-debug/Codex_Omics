@@ -7,7 +7,7 @@ description: Run installed scvi-tools models through a registry and adapter syst
 
 ## Required workflow
 
-1. Inspect the environment with `omics-codex inspect-env --kind scvi`; fix missing `scvi-tools`, CPU-only PyTorch, or GPU/CUDA mismatches before training.
+1. Inspect the environment with `omics-codex doctor --kind scvi --json`; fix missing `scvi-tools`, CPU-only PyTorch, or GPU/CUDA mismatches before training.
 2. Create a safe spec with `omics-codex template create --name scvi` or use a QC-to-scVI workflow with `omics-codex template create --name scrna-qc-scvi`.
 3. List or inspect models with `omics-codex scvi list-models` or `omics-codex scvi inspect <MODEL>`.
 4. Validate AnnData with `omics-codex scvi validate --config omics_run_spec.yaml`.
@@ -30,7 +30,7 @@ description: Run installed scvi-tools models through a registry and adapter syst
 ## Commands
 
 ```bash
-omics-codex inspect-env --kind scvi
+omics-codex doctor --kind scvi --json
 omics-codex template create --name scvi --input cells.h5ad --outdir results/scvi --out scvi.json
 omics-codex scvi list-models
 omics-codex scvi inspect SCVI

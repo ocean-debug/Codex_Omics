@@ -1,6 +1,6 @@
 # Codex Omics Skills
 
-Codex Omics Skills is a repo-local Codex plugin plus Python CLI for reproducible omics analysis workflows. It helps Codex move from research-only assistance to structured analysis planning, validation, execution, and reporting.
+Codex Omics Skills is a standard-ready Codex plugin package with `omics-codex` as its execution backend for reproducible omics analysis workflows. It helps Codex move from research-only assistance to structured analysis planning, validation, execution, and reporting.
 
 Current capabilities:
 
@@ -22,26 +22,27 @@ python -m pip install -e ".[dev,nfcore,scverse]"
 
 `scvi-tools`, GPU PyTorch, Java, Nextflow, nf-core, Singularity, and Apptainer are environment-managed dependencies. They are not forced into the default install because GPU and HPC stacks are site-specific.
 
-Check the active environment before running real analyses:
+Check the active environment before running real analyses or installing dependencies:
 
 ```bash
-omics-codex inspect-env --kind all
+omics-codex doctor --json
 ```
 
-For UV-based scVI environments, activate `.venv` first and install `scvi-tools` plus a PyTorch build that matches the GPU node driver/CUDA stack. Codex Omics reports missing or CPU-only components, but it does not automatically install GPU packages.
+Codex Omics detects UV `.venv`, standard `venv`, conda/mamba, and system Python environments. It reports missing components and matching install commands, but it does not install scVI, GPU PyTorch, Java, Nextflow, nf-core, or container tools unless the user explicitly approves.
 
 ## Quick Start
 
 The v0.3 user path is:
 
 ```text
-inspect-env -> inspect-data -> route/template -> workflow plan -> approved run -> report
+doctor -> inspect-data -> route/template -> workflow plan -> approved run -> report
 ```
 
 Start by checking the active environment and input directory:
 
 ```bash
 omics-codex inspect-env --kind all
+omics-codex doctor --json
 omics-codex inspect-data --input /path/to/input
 ```
 
@@ -84,18 +85,19 @@ omics-codex workflow run --config examples/workflows/scrna_qc_scvi.approved.yaml
 
 ## Codex Plugin
 
-The Codex plugin lives inside this repository:
+The Codex plugin lives inside this repository and can be packaged as a standard plugin zip:
 
 ```text
 plugins/omics-analysis/
 ```
 
-It contains the plugin descriptor, skills, schemas, and helper scripts. See [docs/plugin-installation.md](docs/plugin-installation.md) for how to use it as a repo-local plugin and how this differs from a packaged Codex plugin.
+It contains the plugin descriptor, skills, schemas, and helper scripts. See [docs/plugin-package.md](docs/plugin-package.md) for building `codex-omics-plugin-v0.4.0.zip`, and [docs/plugin-installation.md](docs/plugin-installation.md) for repo-local loading.
 
 ## Common Commands
 
 ```bash
 omics-codex --help
+omics-codex doctor --json
 omics-codex validate --config examples/scrna_qc/omics_run_spec.yaml
 omics-codex inspect-data --input /path/to/input
 omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --outdir results/demo --out omics_run_spec.json

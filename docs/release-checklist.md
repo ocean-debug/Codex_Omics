@@ -40,6 +40,7 @@ python -m pytest tests/unit -q
 python -m pytest tests/integration -q
 omics-codex inspect-env --kind nfcore
 omics-codex inspect-env --kind scvi
+omics-codex doctor --json
 omics-codex route --prompt "Create a bulk RNA workflow" --input examples --outdir results/route_demo --out results/route_demo.workflow.json
 omics-codex template list
 omics-codex template create --name scrna-qc-scvi --input examples --outdir results/template_scrna_scvi --out results/template_scrna_scvi.workflow.json
@@ -89,5 +90,12 @@ Record statuses from `summary.json`. scVI and bulk RNA remain the active real-da
 
 - Update `CHANGELOG.md`.
 - Confirm `pyproject.toml` version matches the release tag.
+- Build and check the plugin package:
+
+  ```bash
+  python scripts/release/build_plugin_package.py
+  python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin-v0.4.0.zip
+  ```
+
 - Push `main`.
 - Create a GitHub release with validation results and known limitations.

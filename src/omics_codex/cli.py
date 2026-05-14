@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .common.environment import inspect_environment
+from .common.environment import doctor_environment, inspect_environment
 from .common.errors import OmicsError
 from .common.io import load_yaml_or_json, write_json
 from .common.schema import assert_valid, validate_payload
@@ -87,6 +87,11 @@ def build_parser() -> argparse.ArgumentParser:
     env_parser = sub.add_parser("inspect-env", help="Inspect local or remote active environment")
     env_parser.add_argument("--kind", default="all", choices=["all", "nfcore", "scrna_qc", "scvi"])
     env_parser.set_defaults(func=lambda args: inspect_environment(args.kind))
+
+    doctor_parser = sub.add_parser("doctor", help="Diagnose plugin backend readiness and installation guidance")
+    doctor_parser.add_argument("--kind", default="all", choices=["all", "nfcore", "scrna_qc", "scvi"])
+    doctor_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON output")
+    doctor_parser.set_defaults(func=lambda args: doctor_environment(args.kind))
 
     template_parser = sub.add_parser("skill-template", help="Create a starter omics skill template")
     template_sub = template_parser.add_subparsers(required=True)

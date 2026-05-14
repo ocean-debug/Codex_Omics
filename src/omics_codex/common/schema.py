@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -21,12 +22,20 @@ def schema_path(name: str) -> Path:
         filename = SCHEMA_FILES[name]
     except KeyError as exc:
         raise InvalidRunSpec(f"Unknown schema: {name}") from exc
-    return plugin_root() / "schemas" / filename
+    candidate = plugin_root() / "schemas" / filename
+    return candidate
 
 
 def load_schema(name: str) -> dict[str, Any]:
-    with schema_path(name).open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    try:
+        with schema_path(name).open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        try:
+            filename = SCHEMA_FILES[name]
+            return json.loads(resources.files("omics_codex.schemas").joinpath(filename).read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise InvalidRunSpec(f"Schema resource is not available: {name}") from exc
 
 
 def validate_payload(payload: dict[str, Any], schema_name: str) -> list[str]:

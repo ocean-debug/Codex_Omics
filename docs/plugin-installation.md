@@ -1,6 +1,6 @@
 # Plugin Installation
 
-Codex Omics is currently distributed as a repo-local Codex plugin plus a Python package. This is intentional for v0.3: the skills are versioned with the code and examples, while the CLI handles runtime work.
+Codex Omics is distributed as a standard-ready Codex plugin package plus an `omics-codex` CLI backend. The plugin is the user-facing entry point; the CLI handles runtime work.
 
 ## Plugin Layout
 
@@ -41,7 +41,7 @@ A repo-local plugin is still a Codex plugin. The difference is distribution:
 - Repo-local: loaded from this checkout, versioned with the project, best for active development.
 - Packaged plugin: published through a plugin distribution channel, best after APIs, docs, and environment assumptions are stable.
 
-Codex Omics stays repo-local for v0.3 because omics execution depends on site-managed tools such as scvi-tools, GPU PyTorch, Java, Nextflow, nf-core, Singularity, and Apptainer.
+Codex Omics can be used repo-local during development or built as a plugin zip for standard loading. Omics execution still depends on site-managed tools such as scvi-tools, GPU PyTorch, Java, Nextflow, nf-core, Singularity, and Apptainer.
 
 ## Skill-to-CLI Flow
 
@@ -58,7 +58,7 @@ The plugin should guide Codex to create, validate, and explain workflows. The Py
 For user-facing analysis requests, plugin skills should drive this CLI path:
 
 ```bash
-omics-codex inspect-env --kind all
+omics-codex doctor --json
 omics-codex inspect-data --input /path/to/input
 omics-codex route --prompt "..." --input /path/to/input --outdir results/<analysis> --out workflow.json
 omics-codex workflow plan --config workflow.json
@@ -76,3 +76,4 @@ Before packaging this as a standard plugin, complete these checks:
 - Smoke, unit, and integration tests pass in the documented remote environment.
 - Heavy-test limitations are documented.
 - Plugin metadata points to the public repository.
+- `omics-codex doctor --json` correctly identifies UV, venv, conda/mamba, or system Python.

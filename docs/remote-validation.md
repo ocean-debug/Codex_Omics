@@ -38,6 +38,7 @@ python -m pytest tests/smoke -q
 python -m pytest tests/unit -q
 python -m pytest tests/integration -q
 omics-codex --help
+omics-codex doctor --json
 omics-codex inspect-env --kind all
 omics-codex inspect-env --kind nfcore
 omics-codex inspect-env --kind scvi
