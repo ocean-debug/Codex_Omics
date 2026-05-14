@@ -25,7 +25,7 @@ def import_anndata_stack():
         raise OmicsError(
             "MissingSoftware",
             f"scVI dependencies are missing: {exc}",
-            "Install the scvi extra in the codex-omics conda environment.",
+            "Activate the project UV environment, install scverse extras, and install scvi-tools/PyTorch there.",
             "import_scvi_stack",
         ) from exc
     return ad, md, np, pd, sc, scipy_sparse
@@ -93,6 +93,15 @@ def load_or_create_adata(spec: dict[str, Any]):
 
 
 def validate_scvi(spec: dict[str, Any]) -> dict[str, Any]:
+    preflight = scvi_preflight(spec)
+    if preflight["blockers"]:
+        return {
+            "valid": False,
+            "issues": preflight["blockers"],
+            "warnings": preflight["warnings"],
+            "environment": preflight["environment"],
+            "install_hints": preflight["install_hints"],
+        }
     adata = load_or_create_adata(spec)
     model_name = spec.get("scvi", {}).get("model", "SCVI")
     model_info = inspect_model(model_name)
@@ -111,11 +120,27 @@ def validate_scvi(spec: dict[str, Any]) -> dict[str, Any]:
 
 
 def train_scvi(spec: dict[str, Any]) -> dict[str, Any]:
-    adata = load_or_create_adata(spec)
     outputs = spec.get("outputs", {})
     execution = spec.get("execution", {})
     outdir = prepare_outdir(outputs.get("outdir", "./results/scvi"), force=bool(execution.get("force", False)))
     model_name = spec.get("scvi", {}).get("model", "SCVI")
+    preflight = scvi_preflight(spec)
+    if preflight["blockers"]:
+        manifest = base_manifest(
+            skill="scvi-universal",
+            status="blocked",
+            inputs=spec.get("inputs", {}),
+            outputs={**outputs, "outdir": str(outdir), "report": str(outdir / "report.md")},
+            parameters=spec.get("scvi", {}),
+            errors=preflight["blockers"],
+        )
+        manifest["environment"] = preflight["environment"]
+        manifest["warnings"] = preflight["warnings"]
+        manifest["install_hints"] = preflight["install_hints"]
+        write_text(outdir / "report.md", render_scvi_blocked_report(model_name, manifest))
+        write_manifest(outputs.get("manifest") or outdir / "run_manifest.json", manifest)
+        return manifest
+    adata = load_or_create_adata(spec)
     adapter = get_adapter(model_name)
     validation = adapter.validate_input(adata, spec)
     assert_validation(validation)
@@ -157,6 +182,31 @@ def train_scvi(spec: dict[str, Any]) -> dict[str, Any]:
     return manifest
 
 
+def scvi_preflight(spec: dict[str, Any]) -> dict[str, Any]:
+    env = inspect_environment("scvi").get("scvi", {})
+    blockers = list(env.get("blockers", []))
+    warnings = list(env.get("warnings", []))
+    train = spec.get("scvi", {}).get("train", {})
+    accelerator = str(train.get("accelerator", "")).lower()
+    require_gpu = bool(spec.get("execution", {}).get("require_gpu")) or accelerator in {"gpu", "cuda"}
+    torch_info = env.get("python_packages", {}).get("torch", {})
+    if require_gpu and not torch_info.get("cuda_available"):
+        blockers.append(
+            {
+                "error_type": "TorchCudaUnavailable",
+                "message": "This scVI run requested GPU training, but torch.cuda.is_available() is false.",
+                "suggested_fix": "Install a CUDA-enabled PyTorch build matching this node's driver/CUDA stack in the active UV environment.",
+                "failed_step": "preflight_scvi_gpu",
+            }
+        )
+    return {
+        "blockers": blockers,
+        "warnings": warnings,
+        "install_hints": env.get("install_hints", []),
+        "environment": env,
+    }
+
+
 def render_scvi_report(model_name: str, summary: dict[str, Any], validation: dict[str, Any]) -> str:
     return (
         "# scvi-tools Model Report\n\n"
@@ -168,4 +218,19 @@ def render_scvi_report(model_name: str, summary: dict[str, Any], validation: dic
         "```json\n"
         + __import__("json").dumps(summary, indent=2, sort_keys=True, default=str)
         + "\n```\n"
+    )
+
+
+def render_scvi_blocked_report(model_name: str, manifest: dict[str, Any]) -> str:
+    return (
+        "# scvi-tools Model Report\n\n"
+        f"- Model: `{model_name}`\n"
+        "- Status: `blocked`\n\n"
+        "## Environment blockers\n\n"
+        "```json\n"
+        + __import__("json").dumps(manifest.get("errors", []), indent=2, sort_keys=True, default=str)
+        + "\n```\n\n"
+        "## Install hints\n\n"
+        + "\n".join(f"- {hint}" for hint in manifest.get("install_hints", []))
+        + "\n"
     )

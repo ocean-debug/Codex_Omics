@@ -8,6 +8,7 @@ from omics_codex.scvi.train import validate_scvi
 @pytest.mark.integration
 def test_scvi_validate_synthetic(tmp_path) -> None:
     pytest.importorskip("anndata")
+    pytest.importorskip("scvi")
     spec = {
         "run": {"name": "synthetic_scvi", "type": "scvi_model", "skill": "scvi-universal"},
         "inputs": {"path": str(tmp_path / "synthetic.h5ad"), "type": "h5ad", "synthetic": True},
@@ -30,6 +31,7 @@ def test_scvi_validate_synthetic(tmp_path) -> None:
 )
 def test_curated_scvi_adapters_validate_synthetic(tmp_path, model, setup) -> None:
     pytest.importorskip("anndata")
+    pytest.importorskip("scvi")
     spec = {
         "run": {"name": f"synthetic_{model.lower()}", "type": "scvi_model", "skill": "scvi-universal"},
         "inputs": {"path": str(tmp_path / f"{model.lower()}.h5ad"), "type": "h5ad", "synthetic": True},

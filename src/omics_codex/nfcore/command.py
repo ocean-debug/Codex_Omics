@@ -101,6 +101,15 @@ def runtime_blockers(spec: dict[str, Any]) -> list[dict[str, Any]]:
                 "failed_step": "preflight_nextflow",
             }
         )
+    if not shutil.which("nf-core"):
+        errors.append(
+            {
+                "error_type": "MissingSoftware",
+                "message": "nf-core CLI is not available on PATH.",
+                "suggested_fix": "Install nf-core in the active environment, for example: python -m pip install nf-core.",
+                "failed_step": "preflight_nfcore",
+            }
+        )
     java_text = _java_version_text()
     java_major = _java_major_version(java_text)
     if java_major is None:
@@ -164,12 +173,58 @@ def _nextflow_failure_error(returncode: int, outdir: Path) -> dict[str, Any]:
         "stdout_tail": stdout_tail or None,
         "nextflow_log_tail": nextflow_tail or None,
     }
+    failure = classify_nextflow_failure("\n".join(str(value) for value in details.values() if value))
     return {
-        "error_type": "NextflowExecutionFailed",
-        "message": f"Nextflow exited with status {returncode}",
-        "suggested_fix": "Inspect the preserved Nextflow logs, then rerun the saved command.sh with -resume after fixing the environment or pipeline input issue.",
+        "error_type": failure["error_type"],
+        "message": failure["message"] or f"Nextflow exited with status {returncode}",
+        "suggested_fix": failure["suggested_fix"],
         "failed_step": "run_nextflow",
-        "details": {key: value for key, value in details.items() if value},
+        "details": {**{key: value for key, value in details.items() if value}, "classification": failure["classification"]},
+    }
+
+
+def classify_nextflow_failure(text: str) -> dict[str, str]:
+    lowered = text.lower()
+    if ("github.com" in lowered or "nf-core/" in lowered) and any(token in lowered for token in ["connection failed", "connection timed out", "could not resolve host", "unable to access"]):
+        return {
+            "classification": "pipeline_pull_or_network",
+            "error_type": "PipelinePullFailed",
+            "message": "Nextflow could not pull the nf-core pipeline from GitHub or the remote pipeline source.",
+            "suggested_fix": "Pre-cache the pipeline on a node with network access using `nextflow pull nf-core/<pipeline>`, then rerun the saved command.sh with -resume.",
+        }
+    if any(token in lowered for token in ["singularity", "apptainer", "container"]) and any(token in lowered for token in ["failed to pull", "image pull", "download", "timeout"]):
+        return {
+            "classification": "container_pull",
+            "error_type": "ContainerPullFailed",
+            "message": "Nextflow failed while pulling or preparing a container image.",
+            "suggested_fix": "Check the Singularity/Apptainer cache and network access, pre-pull required images if needed, then rerun with -resume.",
+        }
+    if any(token in lowered for token in ["validation of pipeline parameters failed", "unknown option", "unknown parameter", "missing required"]):
+        return {
+            "classification": "input_or_parameter",
+            "error_type": "PipelineInputFailed",
+            "message": "Nextflow rejected one or more pipeline inputs or parameters.",
+            "suggested_fix": "Inspect the saved command.sh and pipeline schema, fix the samplesheet or params, then rerun with -resume.",
+        }
+    if any(token in lowered for token in ["config parsing failed", "unexpected input", "multiplecompilationerrorsexception"]):
+        return {
+            "classification": "pipeline_config_parse",
+            "error_type": "PipelineConfigParseFailed",
+            "message": "Nextflow could not parse the pipeline configuration.",
+            "suggested_fix": "Check whether the nf-core pipeline revision is compatible with the installed Nextflow version; try a pinned pipeline revision or a compatible Nextflow release, then rerun with -resume.",
+        }
+    if "java" in lowered and any(token in lowered for token in ["unsupported java", "requires java", "java version", "unsupported class file"]):
+        return {
+            "classification": "java_runtime",
+            "error_type": "UnsupportedRuntime",
+            "message": "Nextflow failed because of a Java runtime problem.",
+            "suggested_fix": "Activate envs/activate-nextflow.sh or install Java 17+ for this project, then rerun with -resume.",
+        }
+    return {
+        "classification": "nextflow_execution",
+        "error_type": "NextflowExecutionFailed",
+        "message": "",
+        "suggested_fix": "Inspect the preserved Nextflow logs, then rerun the saved command.sh with -resume after fixing the environment or pipeline input issue.",
     }
 
 

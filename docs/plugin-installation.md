@@ -1,6 +1,6 @@
 # Plugin Installation
 
-Codex Omics is currently distributed as a repo-local Codex plugin plus a Python package. This is intentional for v0.1.0: the skills are versioned with the code and examples, while the CLI handles runtime work.
+Codex Omics is currently distributed as a repo-local Codex plugin plus a Python package. This is intentional for v0.2.0: the skills are versioned with the code and examples, while the CLI handles runtime work.
 
 ## Plugin Layout
 
@@ -41,7 +41,7 @@ A repo-local plugin is still a Codex plugin. The difference is distribution:
 - Repo-local: loaded from this checkout, versioned with the project, best for active development.
 - Packaged plugin: published through a plugin distribution channel, best after APIs, docs, and environment assumptions are stable.
 
-Codex Omics stays repo-local for v0.1.0 because omics execution depends on site-managed tools such as scvi-tools, Java, Nextflow, nf-core, Singularity, and Apptainer.
+Codex Omics stays repo-local for v0.2.0 because omics execution depends on site-managed tools such as scvi-tools, GPU PyTorch, Java, Nextflow, nf-core, Singularity, and Apptainer.
 
 ## Skill-to-CLI Flow
 

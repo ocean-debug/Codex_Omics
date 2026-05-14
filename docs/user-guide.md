@@ -1,6 +1,6 @@
 # User Guide
 
-This guide covers the public v0.1.0 workflow for users who clone the repository and install the `omics-codex` CLI.
+This guide covers the public v0.2.0 workflow for users who clone the repository and install the `omics-codex` CLI.
 
 ## Setup
 
@@ -10,7 +10,7 @@ Install the project in a Python environment:
 python -m pip install -e ".[dev,nfcore,scverse]"
 ```
 
-The `scvi` extra is intentionally empty. Install `scvi-tools` through the environment manager that matches your GPU stack.
+The `scvi` extra is intentionally empty. Install `scvi-tools` through the environment manager that matches your GPU stack. For UV environments, activate `.venv` first, then install `scvi-tools` and a PyTorch build matching the GPU node driver/CUDA stack.
 
 Check the CLI:
 
@@ -18,6 +18,8 @@ Check the CLI:
 omics-codex --help
 omics-codex inspect-env --kind all
 ```
+
+`inspect-env` returns a structured `status`, `blockers`, `warnings`, and `install_hints`. Fix blockers before running real workflows.
 
 ## Workflow
 
@@ -65,7 +67,7 @@ Inspect output inventory after a run:
 omics-codex nfcore verify-output --pipeline rnaseq --outdir results/nfcore_rnaseq
 ```
 
-Real nf-core execution requires a working Java 17+, Nextflow, nf-core, and container backend. If those are missing, the runner records a `blocked` manifest instead of failing without provenance.
+Real nf-core execution requires Java 17+, Nextflow, nf-core, git access or a pre-cached pipeline, and a container backend such as Singularity or Apptainer. If core runtime components are missing, the runner records a `blocked` manifest instead of failing without provenance. If a pipeline pull fails on a restricted compute node, pre-cache it with `nextflow pull nf-core/<pipeline>` on a node with network access and rerun the saved `command.sh` with `-resume`.
 
 ## scRNA QC
 
@@ -100,6 +102,28 @@ omics-codex scvi train --config examples/scvi/omics_run_spec.yaml
 ```
 
 The curated adapters cover `SCVI`, `SCANVI`, `TOTALVI`, `PEAKVI`, and `MULTIVI`. Outputs include model files, trained AnnData or MuData, summary JSON, and a report.
+
+Before training, run:
+
+```bash
+omics-codex inspect-env --kind scvi
+```
+
+If GPU hardware is visible but `torch.cuda.is_available()` is false, install a CUDA-enabled PyTorch build that matches the node driver/CUDA stack. Codex Omics reports the mismatch and blocks only when the run explicitly requests GPU training.
+
+## Real-data acceptance scripts
+
+Reusable templates live in `scripts/acceptance/`:
+
+```bash
+export CODEX_OMICS_DATA_DIR=/path/to/data/test
+export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
+bash scripts/acceptance/run_scvi.sh
+bash scripts/acceptance/run_bulk_rna.sh
+bash scripts/acceptance/run_atac.sh
+```
+
+Expected input layout is `nf-core/rna`, `nf-core/atac`, `nf-core/genome`, and `scvi` under `CODEX_OMICS_DATA_DIR`. Generated subsets, specs, manifests, logs, and reports are written under separate result subfolders.
 
 ## Reports
 

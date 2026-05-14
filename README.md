@@ -20,7 +20,15 @@ cd Codex_Omics
 python -m pip install -e ".[dev,nfcore,scverse]"
 ```
 
-`scvi-tools`, Java, Nextflow, nf-core, Singularity, and Apptainer are environment-managed dependencies. They are not forced into the default install because GPU and HPC stacks are site-specific.
+`scvi-tools`, GPU PyTorch, Java, Nextflow, nf-core, Singularity, and Apptainer are environment-managed dependencies. They are not forced into the default install because GPU and HPC stacks are site-specific.
+
+Check the active environment before running real analyses:
+
+```bash
+omics-codex inspect-env --kind all
+```
+
+For UV-based scVI environments, activate `.venv` first and install `scvi-tools` plus a PyTorch build that matches the GPU node driver/CUDA stack. Codex Omics reports missing or CPU-only components, but it does not automatically install GPU packages.
 
 ## Quick Start
 
@@ -80,6 +88,7 @@ python -m pytest tests/smoke -q
 python -m pytest tests/unit -q
 python -m pytest tests/integration -q
 omics-codex inspect-env --kind nfcore
+omics-codex inspect-env --kind scvi
 omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
 ```
 
@@ -92,5 +101,7 @@ RUN_HEAVY_OMICS=1 python -m pytest tests/heavy -q
 ```
 
 `envs/activate-nextflow.sh` sets project-local Java/Nextflow and a project-local Singularity cache. nf-core Singularity examples use `envs/nextflow-singularity.config` for resumed validation and longer image pull timeouts.
+
+Real-data acceptance script templates are available under `scripts/acceptance/`. They use `CODEX_OMICS_DATA_DIR` and `CODEX_OMICS_RESULT_DIR` instead of hard-coded site paths, and keep generated data/results out of Git.
 
 See [docs/acceptance-matrix.md](docs/acceptance-matrix.md) and [docs/release-checklist.md](docs/release-checklist.md) for the current support boundary and release process.
