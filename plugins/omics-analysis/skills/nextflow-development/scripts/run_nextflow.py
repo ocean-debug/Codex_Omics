@@ -24,6 +24,12 @@ def classify_failure(text: str) -> dict[str, str]:
     lowered = text.lower()
     if "github.com" in lowered and any(token in lowered for token in ["connection failed", "timed out", "could not resolve", "unable to access"]):
         return {"error_type": "PipelinePullFailed", "message": "Nextflow could not pull the nf-core pipeline.", "suggested_fix": "Pre-cache the pipeline with `nextflow pull nf-core/<pipeline>` and rerun with -resume."}
+    if "failed to find the gene identifier attribute" in lowered or "featurecounts_group_type" in lowered:
+        return {
+            "error_type": "InvalidAnnotationAttributes",
+            "message": "featureCounts could not find the requested GTF attribute.",
+            "suggested_fix": "Use a GTF-compatible attribute such as `--gencode` or `--featurecounts_group_type gene_type`, then rerun with -resume.",
+        }
     if "container" in lowered and any(token in lowered for token in ["pull", "timeout", "failed"]):
         return {"error_type": "ContainerPullFailed", "message": "A container image could not be pulled or prepared.", "suggested_fix": "Check Singularity/Apptainer cache and network access, then rerun with -resume."}
     if "java" in lowered:
