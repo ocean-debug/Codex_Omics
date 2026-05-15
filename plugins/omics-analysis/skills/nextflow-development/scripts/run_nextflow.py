@@ -28,7 +28,25 @@ def classify_failure(text: str) -> dict[str, str]:
         return {"error_type": "ContainerPullFailed", "message": "A container image could not be pulled or prepared.", "suggested_fix": "Check Singularity/Apptainer cache and network access, then rerun with -resume."}
     if "java" in lowered:
         return {"error_type": "UnsupportedRuntime", "message": "Nextflow reported a Java runtime problem.", "suggested_fix": "Use Java 17+."}
+    if "unknown parameter" in lowered or "invalid parameter" in lowered or "schema" in lowered:
+        return {"error_type": "InvalidPipelineParameters", "message": "Nextflow reported invalid pipeline parameters.", "suggested_fix": "Validate the run against the nf-core pipeline schema before rerunning."}
     return {"error_type": "NextflowExecutionFailed", "message": "Nextflow execution failed.", "suggested_fix": "Inspect logs, fix the issue, and rerun with -resume."}
+
+
+def inventory_outputs(outdir: Path) -> dict[str, list[str]]:
+    patterns = {
+        "multiqc_reports": ["**/multiqc_report.html", "**/*multiqc*.html"],
+        "nextflow_logs": [".nextflow.log", "**/.nextflow.log"],
+        "trace_files": ["**/trace.txt", "**/*trace*.txt"],
+        "reports": ["**/report.html", "**/report.md"],
+    }
+    inventory: dict[str, list[str]] = {}
+    for key, globs in patterns.items():
+        found: list[str] = []
+        for pattern in globs:
+            found.extend(str(path) for path in outdir.glob(pattern) if path.is_file())
+        inventory[key] = sorted(set(found))
+    return inventory
 
 
 def main() -> int:
@@ -79,6 +97,7 @@ def main() -> int:
     )
     manifest["environment"] = env
     manifest["execution"] = execution
+    manifest["output_inventory"] = inventory_outputs(outdir)
     write_manifest(outdir / "run_manifest.json", manifest)
     write_report(outdir / "report.md", manifest, title="Nextflow Workflow Report")
     print(json.dumps(manifest, indent=2, sort_keys=True, default=str))

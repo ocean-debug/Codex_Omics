@@ -28,6 +28,7 @@ def main() -> int:
     parser.add_argument("--layer")
     parser.add_argument("--batch-key")
     parser.add_argument("--labels-key")
+    parser.add_argument("--unlabeled-category", default="Unknown")
     parser.add_argument("--protein-obsm", default="protein_expression")
     parser.add_argument("--max-epochs", type=int, default=20)
     parser.add_argument("--accelerator", default="auto")
@@ -49,6 +50,7 @@ def train_or_plan(args: argparse.Namespace) -> dict[str, Any]:
         "layer": args.layer,
         "batch_key": args.batch_key,
         "labels_key": args.labels_key,
+        "unlabeled_category": args.unlabeled_category,
         "protein_obsm": args.protein_obsm,
         "max_epochs": args.max_epochs,
         "accelerator": args.accelerator,
@@ -94,13 +96,17 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
         setup_kwargs["batch_key"] = args.batch_key
     if model_name == "SCANVI" and args.labels_key:
         setup_kwargs["labels_key"] = args.labels_key
+        setup_kwargs["unlabeled_category"] = args.unlabeled_category
     if model_name == "TOTALVI":
         setup_kwargs["protein_expression_obsm_key"] = args.protein_obsm
+    if model_name == "SCANVI" and not args.labels_key:
+        raise ValueError("SCANVI requires --labels-key.")
+    if model_name == "TOTALVI" and args.protein_obsm not in adata.obsm:
+        raise ValueError(f"TOTALVI requires adata.obsm['{args.protein_obsm}'].")
+    if model_name == "MULTIVI" and "modality" not in adata.obs and "modality" not in adata.var:
+        raise ValueError("MULTIVI requires modality metadata in adata.obs or adata.var.")
     cls.setup_anndata(adata, **setup_kwargs)
-    if model_name == "SCANVI":
-        model = cls(adata, unlabeled_category="Unknown")
-    else:
-        model = cls(adata)
+    model = cls(adata)
     model.train(max_epochs=args.max_epochs)
     latent_key = f"X_{model_name.lower()}"
     if hasattr(model, "get_latent_representation"):
@@ -115,7 +121,8 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
     model.save(model_dir, overwrite=True)
     trained = outdir / "adata_trained.h5ad"
     adata.write_h5ad(trained)
-    summary = {"model": model_name, "latent_key": latent_key, "max_epochs": args.max_epochs, "environment": env}
+    model_specific_outputs = add_model_specific_outputs(model_name, model, adata, args, outdir)
+    summary = {"model": model_name, "latent_key": latent_key, "max_epochs": args.max_epochs, "environment": env, "model_specific_outputs": model_specific_outputs}
     write_json(outdir / "scvi_model_summary.json", summary)
     outputs = {
         "outdir": str(outdir),
@@ -135,6 +142,30 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
     )
     manifest["summary"] = summary
     return finish(outdir, manifest)
+
+
+def add_model_specific_outputs(model_name: str, model: Any, adata: Any, args: argparse.Namespace, outdir: Path) -> list[str]:
+    outputs: list[str] = []
+    if model_name == "SCANVI" and hasattr(model, "predict"):
+        predictions = model.predict()
+        adata.obs["scanvi_predicted_labels"] = predictions
+        write_json(outdir / "scanvi_predictions_summary.json", {"obs_key": "scanvi_predicted_labels", "n_predictions": int(len(predictions))})
+        outputs.append("scanvi_predictions_summary.json")
+    if model_name == "TOTALVI" and hasattr(model, "get_normalized_expression"):
+        try:
+            _, protein = model.get_normalized_expression(return_numpy=True)
+            write_json(outdir / "totalvi_protein_summary.json", {"protein_obsm": args.protein_obsm, "shape": list(getattr(protein, "shape", []))})
+            outputs.append("totalvi_protein_summary.json")
+        except Exception as exc:
+            write_json(outdir / "totalvi_protein_summary.json", {"error": str(exc)})
+            outputs.append("totalvi_protein_summary.json")
+    if model_name == "PEAKVI":
+        write_json(outdir / "peakvi_accessibility_summary.json", {"latent_key": f"X_{model_name.lower()}", "matrix": "chromatin_accessibility"})
+        outputs.append("peakvi_accessibility_summary.json")
+    if model_name == "MULTIVI":
+        write_json(outdir / "multivi_modality_summary.json", {"latent_key": f"X_{model_name.lower()}", "modalities": sorted({str(x) for x in adata.obs.get("modality", [])}) if "modality" in adata.obs else []})
+        outputs.append("multivi_modality_summary.json")
+    return outputs
 
 
 def finish(outdir: Path, manifest: dict[str, Any]) -> dict[str, Any]:

@@ -92,6 +92,7 @@ def execute_qc(input_path: Path, outdir: Path, parameters: dict[str, Any], env: 
 
     adata = load_anndata(input_path, sc)
     counts_layer = parameters["counts_layer"]
+    counts_check = inspect_counts_source(adata, counts_layer, np)
     if counts_layer not in adata.layers:
         adata.layers[counts_layer] = adata.X.copy()
     adata.raw = adata.copy()
@@ -113,7 +114,10 @@ def execute_qc(input_path: Path, outdir: Path, parameters: dict[str, Any], env: 
         "after": after,
         "removed_cells": int(adata.n_obs - filtered.n_obs),
         "counts_layer": counts_layer,
+        "counts_source": counts_check["source"],
+        "counts_check": counts_check,
         "filter_mode": parameters["filter_mode"],
+        "filtering": filter_summary(adata, keep, parameters, np),
     }
     write_json(outdir / "qc_summary.json", summary)
     outputs = {
@@ -132,6 +136,8 @@ def execute_qc(input_path: Path, outdir: Path, parameters: dict[str, Any], env: 
         parameters=parameters,
         warnings=env["warnings"],
     )
+    if counts_check["warnings"]:
+        manifest["warnings"].extend(counts_check["warnings"])
     manifest["summary"] = summary
     return finish(outdir, manifest, "Single-cell RNA-seq QC Report")
 
@@ -166,6 +172,55 @@ def summarize(adata: Any, np: Any) -> dict[str, Any]:
                 "max": float(np.nanmax(values)),
             }
     return summary
+
+
+def inspect_counts_source(adata: Any, counts_layer: str, np: Any) -> dict[str, Any]:
+    source = f"layers['{counts_layer}']" if counts_layer in adata.layers else "X"
+    matrix = adata.layers[counts_layer] if counts_layer in adata.layers else adata.X
+    values = matrix.data if hasattr(matrix, "data") else np.asarray(matrix).ravel()
+    sample = np.asarray(values[: min(values.size, 20000)], dtype=float) if values.size else np.asarray([], dtype=float)
+    integer_like = bool(sample.size and np.nanmin(sample) >= 0 and np.allclose(sample, np.round(sample)))
+    max_value = float(np.nanmax(sample)) if sample.size else 0.0
+    warnings = []
+    if not integer_like:
+        warnings.append(
+            {
+                "warning_type": "NormalizedMatrixSuspected",
+                "message": f"Selected counts source {source} is not non-negative integer-like.",
+                "suggested_fix": "Use raw counts in a layer such as layers['counts'] before QC and downstream count-based modeling.",
+            }
+        )
+    if integer_like and max_value <= 50:
+        warnings.append(
+            {
+                "warning_type": "LowDynamicRangeCounts",
+                "message": f"Selected counts source {source} has low maximum sampled count ({max_value}).",
+                "suggested_fix": "Confirm the matrix is raw UMI counts, not log-normalized expression.",
+            }
+        )
+    return {"source": source, "integer_like": integer_like, "sampled_max": max_value, "warnings": warnings}
+
+
+def filter_summary(adata: Any, keep: Any, parameters: dict[str, Any], np: Any) -> dict[str, Any]:
+    removed = ~keep
+    reasons: dict[str, int] = {}
+    if parameters["filter_mode"] == "mad":
+        for key, n_mads, two_sided in [("total_counts", 5.0, True), ("n_genes_by_counts", 5.0, True), ("pct_counts_mt", 3.0, False)]:
+            if key in adata.obs:
+                reasons[f"{key}_mad"] = int(np.sum(mad_outliers(np.asarray(adata.obs[key], dtype=float), n_mads, np, two_sided)))
+    if parameters.get("max_pct_mito") is not None and "pct_counts_mt" in adata.obs:
+        reasons["max_pct_mito"] = int(np.sum(np.asarray(adata.obs["pct_counts_mt"], dtype=float) > float(parameters["max_pct_mito"])))
+    if parameters.get("min_genes") is not None and "n_genes_by_counts" in adata.obs:
+        reasons["min_genes"] = int(np.sum(np.asarray(adata.obs["n_genes_by_counts"], dtype=float) < int(parameters["min_genes"])))
+    if parameters.get("max_genes") is not None and "n_genes_by_counts" in adata.obs:
+        reasons["max_genes"] = int(np.sum(np.asarray(adata.obs["n_genes_by_counts"], dtype=float) > int(parameters["max_genes"])))
+    batch_key = "batch" if "batch" in adata.obs else None
+    batch_summary = {}
+    if batch_key:
+        for batch in sorted(set(map(str, adata.obs[batch_key]))):
+            mask = np.asarray(adata.obs[batch_key].astype(str) == batch)
+            batch_summary[batch] = {"before": int(np.sum(mask)), "after": int(np.sum(mask & keep)), "removed": int(np.sum(mask & removed))}
+    return {"removed_total": int(np.sum(removed)), "reason_counts": reasons, "batch_key": batch_key, "batch_summary": batch_summary}
 
 
 def build_filter_mask(adata: Any, parameters: dict[str, Any], np: Any) -> Any:

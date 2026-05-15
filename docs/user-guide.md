@@ -5,7 +5,11 @@ Codex-Omics is plugin-only. Load `plugins/omics-analysis/` in Codex, then use th
 ## Standard path
 
 ```text
-select skill -> check environment -> validate input -> dry-run -> approved run -> manifest/report
+route or select skill -> check environment -> validate input -> dry-run -> approved run -> manifest/report
+```
+
+```bash
+python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --prompt "run scVI integration" --input data --outdir results/route --json
 ```
 
 ## single-cell-rna-qc
@@ -17,6 +21,8 @@ python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py -
 python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --approved true --write-manifest
 ```
 
+Reports include raw-count source checks, filtering summaries, and batch-aware counts when a `batch` column is present.
+
 ## scvi-tools
 
 ```bash
@@ -26,6 +32,8 @@ python plugins/omics-analysis/skills/scvi-tools/scripts/validate_adata.py --inpu
 python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --dry-run --json
 ```
 
+Model-specific validation covers `SCVI`, `SCANVI`, `TOTALVI`, `PEAKVI`, and `MULTIVI`. Training requires `--approved true`.
+
 ## nextflow-development
 
 ```bash
@@ -34,6 +42,17 @@ python plugins/omics-analysis/skills/nextflow-development/scripts/detect_data_ty
 python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline rnaseq --input fastq_dir --out samplesheet.csv
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --dry-run --json
 ```
+
+Failed execution records stdout/stderr, `.nextflow.log` when available, output inventory, and a classified failure reason.
+
+## Reports and install planning
+
+```bash
+python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest results/run_manifest.json --out results/report.md
+python plugins/omics-analysis/scripts/common/install_planner.py --task scvi --output-dir results/install_scvi --json
+```
+
+Installation is plan-only by default. Use `--execute --approved true` only after reviewing the plan. System Python environments remain blocked unless the user chooses a scoped environment.
 
 ## Outputs
 

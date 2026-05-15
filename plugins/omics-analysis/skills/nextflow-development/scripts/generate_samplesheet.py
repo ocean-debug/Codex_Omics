@@ -36,7 +36,7 @@ def discover_pairs(root: Path) -> list[dict[str, str]]:
             Path(str(r1).replace("-R1", "-R2")),
         ]
         r2 = next((candidate for candidate in candidates if candidate.exists()), None)
-        records.append({"sample": sample, "fastq_1": str(r1), "fastq_2": str(r2 or ""), "strandedness": "auto", "replicate": "1"})
+        records.append({"sample": sample, "fastq_1": str(r1), "fastq_2": str(r2 or ""), "strandedness": "auto", "replicate": "1", "paired": bool(r2)})
     return records
 
 
@@ -78,9 +78,16 @@ def main() -> int:
     parser.add_argument("--write-manifest", action="store_true")
     args = parser.parse_args()
     records = discover_pairs(Path(args.input))
+    errors = []
+    if not Path(args.input).exists():
+        errors.append({"error_type": "MissingInputDirectory", "message": f"Input path does not exist: {args.input}"})
+    if not records:
+        errors.append({"error_type": "NoFastqPairs", "message": "No R1 FASTQ files were detected."})
+    if any(not record.get("paired") for record in records):
+        errors.append({"error_type": "MissingFastqMate", "message": "At least one R1 FASTQ did not have a detected R2 mate."})
     write_sheet(args.pipeline, records, Path(args.out))
-    print(json.dumps({"pipeline": args.pipeline, "samplesheet": args.out, "records": len(records), "valid": bool(records)}, indent=2, sort_keys=True))
-    return 0
+    print(json.dumps({"pipeline": args.pipeline, "samplesheet": args.out, "records": len(records), "valid": bool(records) and not errors, "errors": errors}, indent=2, sort_keys=True))
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":

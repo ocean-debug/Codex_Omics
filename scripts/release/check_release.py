@@ -19,6 +19,9 @@ FORBIDDEN_TEXT = "omics-codex"
 REQUIRED_PLUGIN_FILES = {
     ".codex-plugin/plugin.json",
     "skills/omics-router/SKILL.md",
+    "skills/omics-router/scripts/route_omics.py",
+    "skills/omics-report/SKILL.md",
+    "skills/omics-report/scripts/render_report.py",
     "skills/single-cell-rna-qc/SKILL.md",
     "skills/single-cell-rna-qc/scripts/check_environment.py",
     "skills/single-cell-rna-qc/scripts/qc_analysis.py",
@@ -29,10 +32,15 @@ REQUIRED_PLUGIN_FILES = {
     "skills/nextflow-development/scripts/check_environment.py",
     "skills/nextflow-development/scripts/build_nextflow_command.py",
     "scripts/common/env.py",
+    "scripts/common/install_hints.py",
+    "scripts/common/install_planner.py",
     "scripts/common/manifest.py",
     "scripts/common/report.py",
 }
 P0_HELP_SCRIPTS = [
+    "plugins/omics-analysis/scripts/common/install_planner.py",
+    "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+    "plugins/omics-analysis/skills/omics-report/scripts/render_report.py",
     "plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py",
     "plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py",
     "plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py",

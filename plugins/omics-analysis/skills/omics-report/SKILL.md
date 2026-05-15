@@ -5,6 +5,12 @@ description: Render or summarize Codex-Omics plugin-local run manifests, reports
 
 # Omics Report
 
+## Command
+
+```bash
+python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest results/run_manifest.json --out results/report.md
+```
+
 Use plugin-local outputs:
 
 - `run_manifest.json`
@@ -13,4 +19,4 @@ Use plugin-local outputs:
 - `command.sh`
 - task-specific summaries
 
-Prefer existing `report.md` when present. If a manifest exists without a report, use `plugins/omics-analysis/scripts/common/report.py` as the reference implementation for expected sections.
+Prefer existing `report.md` when present. If a manifest exists without a report, render one from the manifest with the plugin-local report script.

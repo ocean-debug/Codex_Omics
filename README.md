@@ -9,7 +9,8 @@ The plugin is the product. Users load `plugins/omics-analysis/` in Codex, and Co
 - **single-cell-rna-qc**: inspect `.h5ad`, 10x H5, or 10x MTX inputs; check scverse dependencies; plan or run QC; write filtered AnnData, plots, manifest, and report.
 - **scvi-tools**: check scvi-tools, torch, CUDA/GPU state, and AnnData readiness; list available models; validate inputs; train only after approval.
 - **nextflow-development**: check Java, Nextflow, nf-core, git, and container backends; detect FASTQ inputs; generate samplesheets; build dry-run commands; execute only after approval.
-- **omics-router**: guide Codex to the correct skill based on input type and user intent.
+- **omics-router**: inspect input data plus user intent, choose the right skill, and write a safe plan with `approved: false`.
+- **omics-report**: render methods-ready Markdown reports from plugin-local manifests.
 - **skill-authoring-kit**: template for adding future bioinformatics skills.
 
 ## Safety Model
@@ -27,6 +28,13 @@ Requires approval:
 - data movement outside user-controlled output directories.
 
 The plugin diagnoses missing tools and suggests environment-specific install commands. It does not silently install scvi-tools, GPU PyTorch, Java, Nextflow, nf-core, Singularity, Apptainer, or Docker.
+
+When the user explicitly wants help installing dependencies, generate a plan first:
+
+```bash
+python plugins/omics-analysis/scripts/common/install_planner.py --task scvi --output-dir results/install_scvi --json
+python plugins/omics-analysis/scripts/common/install_planner.py --task nfcore --output-dir results/install_nfcore --json
+```
 
 ## Plugin Layout
 
@@ -64,6 +72,12 @@ plugins/omics-analysis/
 
 Then use the selected skill's local scripts.
 
+Route from a prompt and input directory:
+
+```bash
+python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --prompt "run rnaseq workflow" --input data --outdir results/route --json
+```
+
 Single-cell RNA-seq QC:
 
 ```bash
@@ -86,6 +100,12 @@ Nextflow / nf-core:
 python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline rnaseq --input fastq_dir --out samplesheet.csv
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --dry-run --json
+```
+
+Render a report from any manifest:
+
+```bash
+python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest results/qc/run_manifest.json --out results/qc/report.md
 ```
 
 ## Environment Requirements
@@ -118,6 +138,9 @@ python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --j
 python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --help
 python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --help
+python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --help
+python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --help
+python plugins/omics-analysis/scripts/common/install_planner.py --help
 ```
 
 Run tests when `pytest` is available:

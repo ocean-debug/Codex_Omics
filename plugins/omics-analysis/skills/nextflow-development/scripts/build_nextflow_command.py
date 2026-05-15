@@ -42,7 +42,7 @@ def main() -> int:
     parser.add_argument("--revision")
     parser.add_argument("--max-cpus", type=int)
     parser.add_argument("--max-memory")
-    parser.add_argument("--resume", action="store_true", default=True)
+    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--write-manifest", action="store_true")
@@ -59,7 +59,7 @@ def main() -> int:
         parameters={"pipeline": args.pipeline, "profile": args.profile, "genome": args.genome, "revision": args.revision},
         commands=[command],
     )
-    manifest["plan"] = {"approval_required": True, "will_execute": False}
+    manifest["plan"] = {"approval_required": True, "will_execute": False, "schema_validation": "Use nf-core/nf-schema validation before approved execution when available."}
     write_manifest(outdir / "run_manifest.json", manifest)
     write_report(outdir / "report.md", manifest, title="Nextflow Workflow Plan")
     print(json.dumps({"command": command, "manifest": str(outdir / "run_manifest.json"), "report": str(outdir / "report.md")}, indent=2, sort_keys=True))

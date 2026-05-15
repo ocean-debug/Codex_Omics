@@ -7,6 +7,12 @@ description: Route omics analysis requests to Codex-Omics plugin-local skills. U
 
 Route to plugin-local skills only.
 
+## Command
+
+```bash
+python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --prompt "run rnaseq" --input data --outdir results/route --json
+```
+
 ## Routing
 
 - h5ad/10x, QC, mitochondrial filtering -> `single-cell-rna-qc`

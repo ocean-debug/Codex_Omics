@@ -7,6 +7,9 @@ python -m compileall -q plugins scripts tests
 python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --help
 python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --help
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --help
+python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --help
+python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --help
+python plugins/omics-analysis/scripts/common/install_planner.py --help
 python scripts/release/build_plugin_package.py
 python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin-v1.0.0.zip
 ```

@@ -38,6 +38,18 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
         issues.append({"error_type": "MissingLabelsKey", "message": f"labels key not found: {args.labels_key}"})
     if args.model.upper() == "TOTALVI" and args.protein_obsm not in adata.obsm:
         issues.append({"error_type": "MissingProteinObsm", "message": f"TOTALVI expects protein data in obsm['{args.protein_obsm}']."})
+    if args.model.upper() == "SCANVI":
+        if not args.labels_key:
+            issues.append({"error_type": "MissingLabelsKey", "message": "SCANVI requires --labels-key."})
+        elif args.labels_key in adata.obs and args.unlabeled_category not in set(map(str, adata.obs[args.labels_key])):
+            warnings = env["warnings"] + [{"warning_type": "NoUnlabeledCategory", "message": f"SCANVI labels do not contain '{args.unlabeled_category}'.", "suggested_fix": "Confirm labels include the unlabeled category or adjust --unlabeled-category."}]
+            env["warnings"] = warnings
+    if args.model.upper() == "PEAKVI" and not looks_like_peak_matrix(adata):
+        issues.append({"error_type": "PeakMatrixValidationFailed", "message": "PEAKVI expects a binary or count-like chromatin accessibility matrix."})
+    if args.model.upper() == "MULTIVI":
+        has_modality = "modality" in adata.obs or "modality" in adata.var or any(key.lower().startswith("modality") for key in adata.uns.keys())
+        if not has_modality:
+            issues.append({"error_type": "MissingModalityMetadata", "message": "MULTIVI expects modality metadata in obs, var, or uns."})
     return {
         "valid": not issues,
         "model": args.model,
@@ -49,6 +61,13 @@ def validate(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def looks_like_peak_matrix(adata: Any) -> bool:
+    names = [str(name) for name in list(adata.var_names[: min(adata.n_vars, 100)])]
+    if any(":" in name and "-" in name for name in names):
+        return True
+    return "peak" in {str(column).lower() for column in adata.var.columns}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate AnnData for scvi-tools training.")
     parser.add_argument("--input", required=True)
@@ -57,6 +76,7 @@ def main() -> int:
     parser.add_argument("--layer")
     parser.add_argument("--batch-key")
     parser.add_argument("--labels-key")
+    parser.add_argument("--unlabeled-category", default="Unknown")
     parser.add_argument("--protein-obsm", default="protein_expression")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
