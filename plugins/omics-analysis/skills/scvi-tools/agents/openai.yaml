@@ -1,0 +1,4 @@
+interface:
+  display_name: "scvi-tools"
+  short_description: "Validate AnnData and run approved scvi-tools workflows."
+  default_prompt: "Train an scVI model on a single-cell dataset."

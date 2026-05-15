@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "nextflow-development plugin-local run",
+  "type": "object",
+  "required": ["pipeline", "input", "outdir"],
+  "properties": {
+    "pipeline": {"type": "string"},
+    "input": {"type": "string"},
+    "outdir": {"type": "string"},
+    "profile": {"type": "string"},
+    "genome": {"type": "string"},
+    "approved": {"type": "boolean"}
+  }
+}

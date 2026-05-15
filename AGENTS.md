@@ -1,26 +1,26 @@
-# Codex Omics Agent Contract
+# Codex-Omics Agent Contract
 
-Use this repository as a standard plugin package with `omics-codex` as the execution backend.
+Use this repository as a plugin-only Codex omics skill collection.
 
 ## Default workflow
 
-1. Run `omics-codex doctor --json` before planning installation or analysis.
-2. Run `omics-codex inspect-data --input <path>` before generating specs from user data.
-3. Generate safe specs with `omics-codex route` or `omics-codex template create`.
-4. Keep `approved: false` until the user explicitly approves execution.
-5. Use `omics-codex workflow plan` before long or expensive runs.
-6. Render reports from manifests with `omics-codex report`.
+1. Select the relevant skill from `plugins/omics-analysis/skills/`.
+2. Read that skill's `SKILL.md`.
+3. Run its plugin-local `scripts/check_environment.py --json`.
+4. Validate inputs with the skill-local validation script when available.
+5. Start with `--dry-run` or planned mode.
+6. Use `--approved true` only after the user explicitly approves execution.
+7. Write and inspect `run_manifest.json` and `report.md`.
 
 ## Environment policy
 
-- Do not assume UV. Detect UV `.venv`, normal `venv`, conda/mamba, or system Python.
-- Do not install scVI, GPU PyTorch, Java, Nextflow, nf-core, or container tools without explicit user approval.
-- If the user approves installation, only modify the active Python environment or project-local `tools/` by default.
+- Detect UV, standard venv, conda/mamba, or system Python before suggesting installs.
+- Do not install scvi-tools, GPU PyTorch, Java, Nextflow, nf-core, or container tools without explicit user approval.
+- Prefer the active Python environment or project-local `tools/` when installation is approved.
 - For unknown or system Python, generate an installation plan instead of mutating the environment.
 
 ## Execution policy
 
-- Prefer the plugin skills and `omics-codex` CLI over ad hoc analysis scripts.
+- Prefer plugin-local scripts over ad hoc analysis scripts.
 - Keep protected data in the user-controlled workspace.
 - Do not commit `.env`, private paths, caches, virtual environments, `tools/`, or analysis results.
-- ATAC true execution is not a default validation blocker unless the user explicitly asks for it.

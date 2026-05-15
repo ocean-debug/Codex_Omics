@@ -1,0 +1,7 @@
+{
+  "input": "cells.h5ad",
+  "output_dir": "results/scrna_qc",
+  "filter_mode": "mad",
+  "species": "auto",
+  "approved": false
+}

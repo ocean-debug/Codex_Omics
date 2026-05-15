@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nextflow Development"
+  short_description: "Plan and run approved nf-core/Nextflow omics workflows."
+  default_prompt: "Prepare an nf-core Nextflow workflow from FASTQ data."

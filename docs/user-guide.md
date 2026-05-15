@@ -1,175 +1,49 @@
 # User Guide
 
-This guide covers the public v0.4 workflow for users who load the Codex plugin package and use `omics-codex` as its backend.
+Codex-Omics is plugin-only. Load `plugins/omics-analysis/` in Codex, then use the selected skill's local scripts.
 
-## Setup
-
-Install the project in a Python environment:
-
-```bash
-python -m pip install -e ".[dev,nfcore,scverse]"
-```
-
-The `scvi` extra is intentionally empty. Install `scvi-tools` through the environment manager that matches your GPU stack. For UV environments, activate `.venv` first, then install `scvi-tools` and a PyTorch build matching the GPU node driver/CUDA stack.
-
-Check the CLI:
-
-```bash
-omics-codex --help
-omics-codex doctor --json
-```
-
-`doctor` returns a structured `status`, detected environment type, task readiness, blockers, warnings, and install hints. Fix blockers before running real workflows.
-
-The recommended user path is:
+## Standard path
 
 ```text
-doctor -> inspect-data -> route/template -> plan/validate -> approved run -> report
+select skill -> check environment -> validate input -> dry-run -> approved run -> manifest/report
 ```
 
-Inspect data and generate a safe draft spec before running:
+## single-cell-rna-qc
 
 ```bash
-omics-codex inspect-data --input /path/to/input
-omics-codex route --prompt "Analyze these sequencing reads" --input /path/to/input --outdir results/demo --out omics_run_spec.json
+python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/validate_input.py --input cells.h5ad --json
+python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --dry-run --json
+python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --approved true --write-manifest
 ```
 
-Router-generated specs keep `approved: false` and include environment requirements such as Java/Nextflow/nf-core/container support for nf-core or scvi-tools/PyTorch requirements for scVI.
-
-Common templates are available when you want a known starting point instead of free-form routing:
+## scvi-tools
 
 ```bash
-omics-codex template list
-omics-codex template create --name bulk-rna --input /path/to/fastq_dir --outdir results/bulk_rna --out bulk_rna.workflow.json
-omics-codex template create --name atac --input /path/to/fastq_dir --outdir results/atac --out atac.workflow.json
-omics-codex template create --name scrna-qc --input /path/to/cells.h5ad --outdir results/scrna_qc --out scrna_qc.json
-omics-codex template create --name scrna-qc-scvi --input /path/to/cells.h5ad --outdir results/scrna_scvi --out scrna_scvi.workflow.json
-omics-codex template create --name scvi --input /path/to/cells.h5ad --outdir results/scvi --out scvi.json
+python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/list_models.py --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/validate_adata.py --input cells.h5ad --model SCVI --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --dry-run --json
 ```
 
-`bulk-rna`, `atac`, and `scrna-qc-scvi` produce workflow specs for `workflow plan/run`. `scrna-qc` and `scvi` produce single-run specs for `validate/run`.
-
-## Workflow
-
-Start with a safe plan:
+## nextflow-development
 
 ```bash
-omics-codex workflow plan --config examples/workflows/scrna_qc_scvi.yaml
+python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/nextflow-development/scripts/detect_data_type.py --input fastq_dir --json
+python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline rnaseq --input fastq_dir --out samplesheet.csv
+python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --dry-run --json
 ```
 
-The default workflow has `approved: false`, so it writes a plan without running analysis stages. Expected outputs:
+## Outputs
 
-- `results/workflows/scrna_qc_scvi/workflow_manifest.json`
-- `results/workflows/scrna_qc_scvi/workflow_report.md`
+Each approved or planned run should write:
 
-Run only an approved workflow:
-
-```bash
-omics-codex workflow run --config examples/workflows/scrna_qc_scvi.approved.yaml
-omics-codex workflow status --config examples/workflows/scrna_qc_scvi.approved.yaml
-```
-
-Resume skips only stages with an existing stage manifest whose status is `completed`:
-
-```bash
-omics-codex workflow resume --config examples/workflows/scrna_qc_scvi.approved.yaml
-```
-
-## nf-core
-
-Build a Nextflow command without running the workflow:
-
-```bash
-omics-codex nfcore build-command --config examples/nfcore_rnaseq/omics_run_spec.yaml
-```
-
-Create a samplesheet from FASTQ files:
-
-```bash
-omics-codex nfcore make-samplesheet --pipeline rnaseq --input /path/to/fastq_dir --out samplesheet.csv
-```
-
-Inspect output inventory after a run:
-
-```bash
-omics-codex nfcore verify-output --pipeline rnaseq --outdir results/nfcore_rnaseq
-```
-
-Real nf-core execution requires Java 17+, Nextflow, nf-core, git access or a pre-cached pipeline, and a container backend such as Singularity or Apptainer. If core runtime components are missing, the runner records a `blocked` manifest instead of failing without provenance. If a pipeline pull fails on a restricted compute node, pre-cache it with `nextflow pull nf-core/<pipeline>` on a node with network access and rerun the saved `command.sh` with `-resume`.
-
-## scRNA QC
-
-Run the synthetic demo:
-
-```bash
-omics-codex scrna-qc run --config examples/scrna_qc/omics_run_spec.yaml
-```
-
-Supported input forms include `.h5ad`, 10x `.h5`, and 10x MTX directories. The QC runner checks raw-count suitability, computes standard QC metrics, supports MAD/fixed filters, and writes:
-
-- filtered `.h5ad`
-- QC summary JSON
-- QC plots
 - `run_manifest.json`
 - `report.md`
+- logs or command files when applicable
+- task-specific outputs
 
-## scVI
+## Safety
 
-List and inspect available models:
-
-```bash
-omics-codex scvi list-models
-omics-codex scvi inspect SCVI
-```
-
-Validate and train the synthetic SCVI demo:
-
-```bash
-omics-codex scvi validate --config examples/scvi/omics_run_spec.yaml
-omics-codex scvi train --config examples/scvi/omics_run_spec.yaml
-```
-
-The curated adapters cover `SCVI`, `SCANVI`, `TOTALVI`, `PEAKVI`, and `MULTIVI`. Outputs include model files, trained AnnData or MuData, summary JSON, and a report.
-
-Before training, run:
-
-```bash
-omics-codex inspect-env --kind scvi
-```
-
-If GPU hardware is visible but `torch.cuda.is_available()` is false, install a CUDA-enabled PyTorch build that matches the node driver/CUDA stack. Codex Omics reports the mismatch and should ask before installing into UV, venv, or conda environments.
-
-## Real-data acceptance scripts
-
-Reusable templates live in `scripts/acceptance/`:
-
-```bash
-export CODEX_OMICS_DATA_DIR=/path/to/data/test
-export CODEX_OMICS_RESULT_DIR=/path/to/data/test/result
-export CODEX_OMICS_NFCORE_PROFILE=singularity
-export CODEX_OMICS_MAX_CPUS=12
-export CODEX_OMICS_MAX_MEMORY=48.GB
-bash scripts/acceptance/run_all.sh
-```
-
-Expected input layout is `nf-core/rna`, `nf-core/atac`, `nf-core/genome`, and `scvi` under `CODEX_OMICS_DATA_DIR`. Generated subsets, specs, manifests, logs, and reports are written under separate result subfolders. `summary.json` is the release gate: scVI and bulk RNA must complete; ATAC may remain failed/blocked only when the manifest has a known classified pipeline pull, config parse, or container pull failure with saved commands and logs.
-
-For ATAC acceptance, `run_atac.sh` infers `read_length` from the first FASTQ
-unless `CODEX_OMICS_ATAC_READ_LENGTH` or `CODEX_OMICS_ATAC_MACS_GSIZE` is set.
-
-## Reports
-
-Render a report from any run manifest:
-
-```bash
-omics-codex report --manifest results/workflows/scrna_qc_scvi/workflow_manifest.json
-```
-
-Reports summarize inputs, outputs, software versions, commands, errors, and next steps. For workflow runs, review both the aggregate workflow manifest and each stage manifest.
-
-v0.3 reports add experiment-aware sections:
-
-- `Methods Summary`: what was planned or run.
-- `Key Parameters`: pipeline/profile, QC thresholds, model, epochs, latent key.
-- `Key Outputs`: manifest, report, MultiQC, filtered AnnData, trained model outputs.
-- `Failure Interpretation`: structured failure cause and suggested fix when available.
+Use dry-run first. Require `--approved true` for real Nextflow execution, scvi-tools training, large downloads, and dependency installation.

@@ -13,11 +13,11 @@
         "description": {"type": "string"},
         "type": {
           "type": "string",
-          "enum": ["nfcore_pipeline", "scrna_qc", "scvi_model", "omics_report", "omics_workflow", "new_skill"]
+          "enum": ["nextflow_workflow", "scrna_qc", "scvi_model", "omics_report", "new_skill"]
         },
         "skill": {
           "type": "string",
-          "enum": ["omics-router", "nf-core-universal", "single-cell-rna-qc", "scvi-universal", "omics-report", "omics-workflow", "skill-authoring-kit"]
+          "enum": ["omics-router", "nextflow-development", "single-cell-rna-qc", "scvi-tools", "omics-report", "skill-authoring-kit"]
         },
         "created_by": {"type": "string"}
       },

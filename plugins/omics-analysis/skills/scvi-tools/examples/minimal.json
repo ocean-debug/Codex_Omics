@@ -1,0 +1,8 @@
+{
+  "input": "cells.h5ad",
+  "output_dir": "results/scvi",
+  "model": "SCVI",
+  "batch_key": "batch",
+  "max_epochs": 20,
+  "approved": false
+}

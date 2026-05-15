@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import sys
+from pathlib import Path
+
+PLUGIN_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
+
+from common.env import inspect_nextflow_environment  # noqa: E402
+from common.io import ensure_outdir, load_json_or_simple_yaml, write_text  # noqa: E402
+from common.manifest import base_manifest, write_manifest  # noqa: E402
+from common.report import write_report  # noqa: E402
+from common.safe_run import run_command  # noqa: E402
+
+
+def approved(value: str | bool) -> bool:
+    return value is True or str(value).lower() in {"1", "true", "yes", "y"}
+
+
+def classify_failure(text: str) -> dict[str, str]:
+    lowered = text.lower()
+    if "github.com" in lowered and any(token in lowered for token in ["connection failed", "timed out", "could not resolve", "unable to access"]):
+        return {"error_type": "PipelinePullFailed", "message": "Nextflow could not pull the nf-core pipeline.", "suggested_fix": "Pre-cache the pipeline with `nextflow pull nf-core/<pipeline>` and rerun with -resume."}
+    if "container" in lowered and any(token in lowered for token in ["pull", "timeout", "failed"]):
+        return {"error_type": "ContainerPullFailed", "message": "A container image could not be pulled or prepared.", "suggested_fix": "Check Singularity/Apptainer cache and network access, then rerun with -resume."}
+    if "java" in lowered:
+        return {"error_type": "UnsupportedRuntime", "message": "Nextflow reported a Java runtime problem.", "suggested_fix": "Use Java 17+."}
+    return {"error_type": "NextflowExecutionFailed", "message": "Nextflow execution failed.", "suggested_fix": "Inspect logs, fix the issue, and rerun with -resume."}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run an approved Nextflow command from a plugin-local plan.")
+    parser.add_argument("--config", required=True)
+    parser.add_argument("--approved", default="false")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--json", action="store_true")
+    parser.add_argument("--write-manifest", action="store_true")
+    args = parser.parse_args()
+    config = load_json_or_simple_yaml(args.config)
+    outdir = ensure_outdir(config.get("outdir", config.get("output_dir", "results/nextflow")))
+    command = config.get("command")
+    if not command and config.get("command_file"):
+        command = Path(config["command_file"]).read_text(encoding="utf-8").strip()
+    if not command:
+        raise SystemExit("--config must contain command or command_file")
+    write_text(outdir / "command.sh", command + "\n")
+    env = inspect_nextflow_environment()
+    status = "planned"
+    errors = []
+    execution = {"approved": approved(args.approved), "returncode": None}
+    if env["blockers"]:
+        status = "blocked"
+        errors.extend(env["blockers"])
+    elif args.dry_run or not approved(args.approved):
+        status = "planned"
+    else:
+        result = run_command(command, outdir=outdir)
+        execution.update(result)
+        status = "completed" if result["returncode"] == 0 else "failed"
+        if status == "failed":
+            stderr = Path(result["stderr"]).read_text(encoding="utf-8", errors="replace")
+            stdout = Path(result["stdout"]).read_text(encoding="utf-8", errors="replace")
+            errors.append(classify_failure(stdout + "\n" + stderr))
+        if Path(".nextflow.log").exists():
+            shutil.copyfile(".nextflow.log", outdir / ".nextflow.log")
+            execution["nextflow_log"] = str(outdir / ".nextflow.log")
+    manifest = base_manifest(
+        skill="nextflow-development",
+        status=status,
+        inputs={"config": args.config},
+        outputs={"outdir": str(outdir), "command": str(outdir / "command.sh"), "manifest": str(outdir / "run_manifest.json"), "report": str(outdir / "report.md")},
+        parameters=config,
+        commands=[command],
+        errors=errors,
+        warnings=env["warnings"],
+    )
+    manifest["environment"] = env
+    manifest["execution"] = execution
+    write_manifest(outdir / "run_manifest.json", manifest)
+    write_report(outdir / "report.md", manifest, title="Nextflow Workflow Report")
+    print(json.dumps(manifest, indent=2, sort_keys=True, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

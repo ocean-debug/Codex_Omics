@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-rna-qc plugin-local run",
+  "type": "object",
+  "required": ["input", "output_dir"],
+  "properties": {
+    "input": {"type": "string"},
+    "output_dir": {"type": "string"},
+    "filter_mode": {"type": "string", "enum": ["mad", "fixed"]},
+    "species": {"type": "string", "enum": ["auto", "human", "mouse"]},
+    "approved": {"type": "boolean"}
+  }
+}

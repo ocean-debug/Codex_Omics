@@ -1,7 +1,7 @@
 {
   "name": "omics-analysis",
-  "version": "0.4.0",
-  "description": "Codex plugin for reproducible omics analysis workflows, including universal nf-core execution, single-cell RNA-seq QC, and scvi-tools model workflows.",
+  "version": "1.0.0",
+  "description": "Codex-compatible omics analysis plugin collection with self-contained skills for single-cell RNA-seq QC, scvi-tools, and Nextflow/nf-core workflows.",
   "author": {
     "name": "Codex Omics Skills maintainers"
   },
@@ -17,9 +17,9 @@
   ],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Omics Analysis",
-    "shortDescription": "Reproducible nf-core, scRNA QC, and scvi-tools workflows.",
-    "longDescription": "Plan, validate, execute, and report reproducible omics workflows from Codex through structured run specs, deterministic scripts, manifests, and reports.",
+    "displayName": "Codex Omics",
+    "shortDescription": "Plugin-local omics analysis skills for Codex agents.",
+    "longDescription": "Run plugin-local omics skills for environment checks, dry-run planning, approved execution, manifests, and reports without requiring a backend command-line tool.",
     "developerName": "Codex Omics Skills maintainers",
     "category": "Science",
     "capabilities": [
@@ -28,10 +28,10 @@
       "Execute"
     ],
     "defaultPrompt": [
-      "Inspect an input directory and generate a safe omics workflow plan.",
-      "Prepare an nf-core run for FASTQ data.",
+      "Inspect an input directory and choose the right omics skill.",
+      "Prepare a Nextflow nf-core run for FASTQ data.",
       "Run scRNA-seq QC on an h5ad file.",
-      "Train an scvi-tools integration model."
+      "Train an approved scvi-tools integration model."
     ],
     "brandColor": "#2563EB"
   }

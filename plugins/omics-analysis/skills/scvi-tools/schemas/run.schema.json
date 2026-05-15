@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scvi-tools plugin-local run",
+  "type": "object",
+  "required": ["input", "output_dir", "model"],
+  "properties": {
+    "input": {"type": "string"},
+    "output_dir": {"type": "string"},
+    "model": {"type": "string"},
+    "batch_key": {"type": "string"},
+    "labels_key": {"type": "string"},
+    "max_epochs": {"type": "integer", "minimum": 1},
+    "approved": {"type": "boolean"}
+  }
+}

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "codex-omics-skills"
-version = "0.4.0"
-description = "Codex plugin and CLI for reproducible omics analysis workflows."
+version = "1.0.0"
+description = "Codex plugin-local skills for reproducible omics analysis workflows."
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -36,15 +36,6 @@ scverse = [
 ]
 scvi = [
 ]
-
-[project.scripts]
-omics-codex = "omics_codex.cli:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-"omics_codex.schemas" = ["*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

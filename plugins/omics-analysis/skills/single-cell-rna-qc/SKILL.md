@@ -1,35 +1,47 @@
 ---
 name: single-cell-rna-qc
-description: Run reproducible single-cell RNA-seq QC and preprocessing for h5ad, 10x H5, or 10x MTX inputs using Scanpy/scverse conventions, raw-count preservation, mitochondrial/ribosomal/hemoglobin metrics, MAD or fixed-threshold filtering, QC plots, filtered AnnData outputs, reports, and run manifests. Use when users request scRNA-seq QC, low-quality cell filtering, mitochondrial filtering, or quality assessment.
+description: Run plugin-local single-cell RNA-seq quality control for h5ad, 10x H5, or 10x MTX inputs. Use for scRNA-seq QC, raw count checks, mitochondrial/ribosomal/hemoglobin metrics, MAD or fixed threshold filtering, QC plots, filtered AnnData outputs, manifests, reports, and scanpy/anndata dependency diagnostics.
 ---
 
 # Single-cell RNA-seq QC
 
-## Required workflow
+Use plugin-local scripts only.
 
-1. Inspect the environment with `omics-codex doctor --kind scrna_qc --json`.
-2. Create or read `omics_run_spec.yaml`; for a safe starting point, use `omics-codex template create --name scrna-qc`.
-3. Confirm input format: `.h5ad`, 10x `.h5`, or 10x MTX directory.
-4. Preserve raw counts in `adata.raw` and a counts layer when available.
-5. Compute QC metrics for total counts, detected genes, mitochondrial, ribosomal, and hemoglobin genes.
-6. Apply MAD-based or fixed-threshold filtering.
-7. Write `filtered.h5ad`, `with_qc.h5ad`, QC plots, `qc_summary.json`, `report.md`, and `run_manifest.json`.
+## Workflow
 
-## Commands
+1. Check dependencies:
+   `python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/check_environment.py --json`
+2. Validate input:
+   `python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/validate_input.py --input cells.h5ad --json`
+3. Plan QC first:
+   `python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --dry-run --json`
+4. Run QC only after explicit approval:
+   `python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --approved true --write-manifest`
+5. Review `run_manifest.json`, `report.md`, QC plots, and filtered h5ad before downstream analysis.
 
-```bash
-omics-codex doctor --kind scrna_qc --json
-omics-codex template create --name scrna-qc --input cells.h5ad --outdir results/scrna_qc --out scrna_qc.json
-omics-codex scrna-qc run --config omics_run_spec.yaml
-```
+## Inputs
 
-## Notes
+- `.h5ad`
+- 10x `.h5`
+- 10x MTX directory
 
-- Do not modify the source h5ad in place.
-- Prefer permissive defaults; users should inspect plots before aggressive filtering.
-- Species-specific gene prefixes belong in `scrna_qc.gene_patterns`.
+## Outputs
 
-## When to read references
+- `with_qc.h5ad`
+- `filtered.h5ad`
+- `qc_summary.json`
+- `qc_metrics_before_filtering.png`
+- `qc_metrics_after_filtering.png`
+- `run_manifest.json`
+- `report.md`
 
-- Read `references/qc-metrics.md` when explaining metrics, plots, or gene patterns.
-- Read `references/filtering-policy.md` when tuning thresholds or reviewing output contracts.
+## Safety
+
+- Default to planned/dry-run behavior unless `--approved true` is set.
+- Do not modify source h5ad files in place.
+- Do not install scanpy/anndata without explicit user approval.
+
+## References
+
+- Read `references/qc-metrics.md` when explaining metrics or gene patterns.
+- Read `references/filtering-policy.md` when tuning thresholds.

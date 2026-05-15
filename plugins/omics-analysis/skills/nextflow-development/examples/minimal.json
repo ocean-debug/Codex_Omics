@@ -1,0 +1,7 @@
+{
+  "pipeline": "rnaseq",
+  "input": "samplesheet.csv",
+  "outdir": "results/rnaseq",
+  "profile": "singularity",
+  "approved": false
+}

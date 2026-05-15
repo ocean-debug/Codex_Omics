@@ -11,7 +11,7 @@ EXCLUDED_SUFFIXES = {".pyc", ".h5ad", ".h5", ".mtx", ".gz", ".fastq", ".fq"}
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build the Codex Omics standard plugin package.")
+    parser = argparse.ArgumentParser(description="Build the Codex-Omics plugin-only package.")
     parser.add_argument("--repo-root", default=Path(__file__).resolve().parents[2])
     parser.add_argument("--outdir", default="dist")
     args = parser.parse_args()
@@ -41,7 +41,7 @@ def main() -> int:
             "plugin": metadata["name"],
             "version": version,
             "entrypoint": ".codex-plugin/plugin.json",
-            "install_policy": "diagnose first; install only after explicit user approval",
+            "install_policy": "skill-local scripts diagnose first; install only after explicit user approval",
         }
         archive.writestr("release-manifest.json", json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"status": "ok", "package": str(target), "version": version}, indent=2, sort_keys=True))
