@@ -4,6 +4,18 @@ Codex-Omics is a Codex plugin for omics analysis. It provides self-contained, pl
 
 The plugin is the product. Users load `plugins/omics-analysis/` in Codex, and Codex uses the bundled `SKILL.md` files plus plugin-local scripts. There is no backend CLI requirement.
 
+## Install as a Codex Plugin
+
+Use the repository plugin directory during development:
+
+```text
+plugins/omics-analysis/
+```
+
+For release use, download or build `dist/codex-omics-plugin-v1.0.0.zip`, extract it, and load the extracted `omics-analysis/` plugin directory in Codex or another compatible agent.
+
+Codex-Omics does not bundle heavy analysis runtimes. Java 17+, Nextflow, nf-core, Singularity/Apptainer or Docker, scverse, scvi-tools, and GPU PyTorch are provided by the user's environment. The plugin checks those dependencies, writes a plan, and executes long-running work only after explicit approval.
+
 ## What It Provides
 
 - **single-cell-rna-qc**: inspect `.h5ad`, 10x H5, or 10x MTX inputs; check scverse dependencies; plan or run QC; write filtered AnnData, plots, manifest, and report.
@@ -127,6 +139,8 @@ python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin
 
 The release check verifies that the plugin package contains the P0 local scripts and does not depend on the removed backend CLI.
 
+The package is intended for GitHub release distribution. It excludes `.git`, environment files, caches, virtual environments, project-local tools, analysis results, and large omics data files.
+
 ## Validation
 
 Plugin-local smoke checks:
@@ -152,6 +166,8 @@ python -m pytest tests -q
 ## Scope
 
 Codex-Omics is a plugin-local omics skill collection. It helps Codex plan, validate, and run approved omics workflows, but it does not guarantee every dataset, pipeline, HPC environment, network, container cache, or GPU stack will work without preparation.
+
+The v1.0.0 release candidate has completed plugin packaging checks, script help checks, scvi-tools validation/training acceptance, and an nf-core/rnaseq run through completion on a user-managed server. Marketplace publication is outside this repository's release checks.
 
 ## License
 
