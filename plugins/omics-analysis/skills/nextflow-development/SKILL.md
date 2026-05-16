@@ -17,13 +17,23 @@ Use plugin-local scripts only.
 5. Execute only after explicit user approval with `--approved true`.
 6. Preserve `command.sh`, logs, `run_manifest.json`, and `report.md`.
 
+## RNA-seq resume guidance
+
+The validated nf-core/rnaseq path is: check the environment, generate the samplesheet, build the command with the Singularity or Apptainer profile, run only after approval, inspect `run_manifest.json` and `report.md`, then use `-resume` for any retry.
+
+On slow HPC networks, uncached images from `depot.galaxyproject.org` can exceed Nextflow's default container pull timeout. Prefer one of these approaches before retrying:
+
+- Build the command with `--pull-timeout "4 h" --overwrite-reports --resume`.
+- Pre-cache the missing Singularity/Apptainer image in the configured Nextflow container cache, then rerun with `-resume`.
+- If registry download speed is the only blocker during server acceptance testing, avoid repeated full reruns after confirming the bottleneck.
+
 ## Commands
 
 ```bash
 python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/nextflow-development/scripts/detect_data_type.py --input fastq_dir --json
 python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline rnaseq --input fastq_dir --out samplesheet.csv
-python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --dry-run --json
+python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --pull-timeout "4 h" --overwrite-reports --resume --dry-run --json
 python plugins/omics-analysis/skills/nextflow-development/scripts/run_nextflow.py --config nfcore_run.yaml --approved true
 ```
 

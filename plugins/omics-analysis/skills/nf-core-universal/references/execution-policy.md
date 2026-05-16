@@ -36,6 +36,7 @@ The user must be shown:
 - Use `-resume` by default.
 - Capture stdout/stderr and `.nextflow.log` paths in the manifest when execution occurs.
 - Record failures as structured errors, not only free-text logs.
+- For slow Singularity/Apptainer pulls, increase pull timeout or pre-cache the missing image before retrying with `-resume`.
 
 ## Resource rules
 
@@ -53,3 +54,7 @@ Generic verification should check:
 - Nextflow exit status and logs if execution occurred.
 
 Curated adapters can add pipeline-specific summaries.
+
+## RNA-seq acceptance note
+
+The migrated `nextflow-development` path has completed an nf-core/rnaseq resume run after a missing Galaxy-hosted container was manually cached. Treat this as the preferred recovery pattern for slow server downloads: classify the timeout, cache the missing image once, then resume from the existing work directory.
