@@ -30,6 +30,12 @@ def classify_failure(text: str) -> dict[str, str]:
             "message": "featureCounts could not find the requested GTF attribute.",
             "suggested_fix": "Use a GTF-compatible attribute such as `--gencode` or `--featurecounts_group_type gene_type`, then rerun with -resume.",
         }
+    if "pulltimeout" in lowered or ("status : 143" in lowered and "downloading network image" in lowered):
+        return {
+            "error_type": "ContainerPullTimeout",
+            "message": "A Singularity/Apptainer container download exceeded the configured Nextflow pull timeout.",
+            "suggested_fix": "Pre-cache the image or increase `singularity.pullTimeout` / `apptainer.pullTimeout`, then rerun with -resume.",
+        }
     if "container" in lowered and any(token in lowered for token in ["pull", "timeout", "failed"]):
         return {"error_type": "ContainerPullFailed", "message": "A container image could not be pulled or prepared.", "suggested_fix": "Check Singularity/Apptainer cache and network access, then rerun with -resume."}
     if "java" in lowered:
