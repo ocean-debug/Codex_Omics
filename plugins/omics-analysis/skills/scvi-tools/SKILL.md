@@ -37,3 +37,15 @@ python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input c
 
 - Read `references/anndata-requirements.md` before validating input matrices.
 - Read `references/model-adapters.md` when choosing model-specific fields.
+- Read `references/troubleshooting.md` when validation, CUDA, memory, or
+  training fails.
+
+| Task | Reference |
+|---|---|
+| AnnData count matrix and metadata checks | `references/anndata-requirements.md` |
+| Model-to-input requirements | `references/model-adapters.md` |
+| SCVI or SCANVI integration and label transfer | `references/scrna-integration.md` |
+| CITE-seq RNA plus protein analysis | `references/cite-seq-totalvi.md` |
+| scATAC-seq accessibility analysis | `references/atac-peakvi.md` |
+| Multiome RNA plus ATAC analysis | `references/multiome-multivi.md` |
+| Counts, CUDA, memory, NaN loss, or schema failures | `references/troubleshooting.md` |

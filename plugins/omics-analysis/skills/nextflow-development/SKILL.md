@@ -46,5 +46,18 @@ python plugins/omics-analysis/skills/nextflow-development/scripts/run_nextflow.p
 
 ## References
 
+- Read `references/installation.md` when environment checks fail.
 - Read `references/execution-policy.md` before approved execution.
 - Read `references/samplesheets.md` when creating or reviewing samplesheets.
+- Read `references/troubleshooting.md` when command execution fails or a retry
+  is needed.
+
+| Task | Reference |
+|---|---|
+| Java, Nextflow, nf-core, git, or container setup | `references/installation.md` |
+| Approved execution, manifests, logs, and reports | `references/execution-policy.md` |
+| Generic FASTQ pairing and samplesheet formats | `references/samplesheets.md` |
+| Bulk RNA-seq with nf-core/rnaseq | `references/pipelines/rnaseq.md` |
+| ATAC-seq with nf-core/atacseq | `references/pipelines/atacseq.md` |
+| WGS/WES or tumor-normal variant calling with nf-core/sarek | `references/pipelines/sarek.md` |
+| Container pull timeouts, cache placement, resume, or failures | `references/troubleshooting.md` |

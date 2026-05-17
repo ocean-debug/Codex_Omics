@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 import zipfile
@@ -11,6 +12,17 @@ from scripts.release.check_release import check_plugin_zip
 def test_plugin_scripts_do_not_import_backend_package() -> None:
     for script in Path("plugins/omics-analysis").rglob("*.py"):
         assert "omics_codex" not in script.read_text(encoding="utf-8"), script
+
+
+def test_skill_reference_links_exist() -> None:
+    skill_paths = [
+        Path("plugins/omics-analysis/skills/scvi-tools/SKILL.md"),
+        Path("plugins/omics-analysis/skills/nextflow-development/SKILL.md"),
+    ]
+    for skill_path in skill_paths:
+        text = skill_path.read_text(encoding="utf-8")
+        for reference in re.findall(r"`(references/[^`]+\.md)`", text):
+            assert (skill_path.parent / reference).exists(), f"{skill_path}: {reference}"
 
 
 def test_build_and_check_plugin_package(tmp_path: Path) -> None:
