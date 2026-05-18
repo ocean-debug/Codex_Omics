@@ -141,6 +141,22 @@ def inspect_pipeline_schema(path: str | None, params: dict[str, object]) -> dict
     }
 
 
+def parameter_audit(args: argparse.Namespace, params: dict[str, object], command: str) -> dict[str, object]:
+    command_expected = {"input", "outdir"}
+    for key in params:
+        if key in {"input", "outdir"} or f"--{key}" in command:
+            command_expected.add(key)
+    missing_from_command = sorted(key for key in params if key not in command_expected)
+    return {
+        "params_file_keys": sorted(params),
+        "command_parameter_keys": sorted(command_expected),
+        "missing_from_command": missing_from_command,
+        "command_uses_params_file": "-params-file" in command,
+        "profile": args.profile,
+        "revision": args.revision or DEFAULT_REVISIONS.get(args.pipeline.replace("nf-core/", "").lower()),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a safe Nextflow command without executing it.")
     parser.add_argument("--pipeline", required=True)
@@ -267,6 +283,7 @@ def main() -> int:
     )
     manifest["params"] = params
     manifest["schema_validation"] = schema_validation
+    manifest["parameter_audit"] = parameter_audit(args, params, command)
     manifest["plan"] = {"approval_required": True, "will_execute": False, "schema_validation": schema_validation}
     write_manifest(outdir / "run_manifest.json", manifest)
     write_report(outdir / "report.md", manifest, title="Nextflow Workflow Plan")

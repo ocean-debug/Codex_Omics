@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
@@ -118,6 +119,85 @@ def test_router_generates_spatialvi_nextflow_plan(tmp_path: Path) -> None:
     assert "--revision dev" in payload["plan"]["commands"][2]
 
 
+def test_router_routes_report_requests(tmp_path: Path) -> None:
+    manifest = tmp_path / "run manifest.json"
+    manifest.write_text('{"skill":"x","status":"completed"}', encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "render report and interpret results",
+            "--input",
+            str(manifest),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "omics-report"
+    assert payload["router_plan"]["detected_intents"] == ["reporting"]
+    assert "--manifest '" in payload["plan"]["commands"][0]
+    assert "run manifest.json'" in payload["plan"]["commands"][0]
+    assert "route out" in payload["plan"]["commands"][0]
+
+
+def test_router_routes_new_skill_authoring_requests(tmp_path: Path) -> None:
+    (tmp_path / "cells.h5ad").write_text("", encoding="utf-8")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "add new skill for bulk-rna-de",
+            "--input",
+            str(tmp_path),
+            "--outdir",
+            str(tmp_path / "route"),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "skill-authoring-kit"
+    assert payload["router_plan"]["candidate_scores"][0]["skill_id"] == "skill-authoring-kit"
+
+
+def test_router_routes_h5ad_scvi_and_qc_intents(tmp_path: Path) -> None:
+    h5ad = tmp_path / "cells.h5ad"
+    h5ad.write_text("", encoding="utf-8")
+    for prompt, expected in [("run scvi batch correction", "scvi-tools"), ("run qc filtering", "single-cell-rna-qc")]:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+                "--prompt",
+                prompt,
+                "--input",
+                str(h5ad),
+                "--outdir",
+                str(tmp_path / prompt.replace(" ", "_")),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert completed.returncode == 0, completed.stderr
+        payload = json.loads(completed.stdout)
+        assert payload["selected_skill"] == expected
+        assert payload["router_plan"]["selected_skill"] == expected
+
+
 def test_report_renderer_from_manifest(tmp_path: Path) -> None:
     manifest = tmp_path / "run_manifest.json"
     manifest.write_text(
@@ -162,6 +242,50 @@ def test_report_renderer_from_manifest(tmp_path: Path) -> None:
     assert "Removed cells" in text
 
 
+def test_report_renderer_preserves_failed_manifest_details(tmp_path: Path) -> None:
+    manifest = tmp_path / "run_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "skill": "nextflow-development",
+                "status": "failed",
+                "run_id": "failed-test",
+                "created_at": "now",
+                "inputs": {"samplesheet": "samplesheet.csv"},
+                "parameters": {"pipeline": "rnaseq"},
+                "outputs": {"outdir": "results"},
+                "commands": ["nextflow run nf-core/rnaseq"],
+                "qc_summary": {"samples_in_general_stats": 2},
+                "interpretation": ["MultiQC parsed."],
+                "warnings": [{"warning_type": "ExampleWarning", "message": "warning"}],
+                "errors": [{"error_type": "InvalidPipelineParameters", "message": "bad param", "auto_fix_plan": ["Regenerate params.yaml"]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    report = tmp_path / "report.md"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-report/scripts/render_report.py",
+            "--manifest",
+            str(manifest),
+            "--out",
+            str(report),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    text = report.read_text(encoding="utf-8")
+    assert "## Warnings / Failures / Suggested Fixes" in text
+    assert "InvalidPipelineParameters" in text
+    assert "Regenerate params.yaml" in text
+    assert "MultiQC parsed." in text
+    assert "nextflow run nf-core/rnaseq" in text
+
+
 def test_scvi_recommend_model_from_task_without_anndata(tmp_path: Path) -> None:
     completed = subprocess.run(
         [
@@ -192,6 +316,26 @@ def test_lightweight_schema_validation_reports_missing_key() -> None:
     assert result["mode"] == "lightweight"
     assert result["valid"] is False
     assert "Missing required key: selected_skill" in result["errors"]
+
+
+def test_scvi_diagnostics_helpers_are_dependency_light(tmp_path: Path) -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    script = Path("plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py")
+    spec = importlib.util.spec_from_file_location("train_model", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class FakeHistory:
+        history = {"elbo_train": [3, 2, 1], "reconstruction_loss_train": [5.0, 4.0]}
+
+    history = module.extract_history(FakeHistory())
+    assert history["elbo_train"] == [3.0, 2.0, 1.0]
+    out = tmp_path / "history.csv"
+    module.write_history_csv(out, history)
+    assert "elbo_train" in out.read_text(encoding="utf-8")
+    interpretation = module.interpret_diagnostics({"latent_key": "X_scvi", "latent_shape": [10, 5]}, history)
+    assert any("Latent embedding" in item for item in interpretation)
 
 
 def test_install_planner_is_plan_only_by_default(tmp_path: Path) -> None:

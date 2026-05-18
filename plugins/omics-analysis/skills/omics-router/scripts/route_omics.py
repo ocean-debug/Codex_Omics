@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import sys
 from pathlib import Path
 from typing import Any
@@ -131,6 +132,8 @@ def score_candidates(prompt: str, inventory: dict[str, Any], registry: dict[str,
             score += 4
         if skill_id == "scvi-tools" and "h5ad" in observed_formats and any(token in prompt for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch", "latent"]):
             score += 4
+        if skill_id == "skill-authoring-kit" and keyword_hits:
+            score += 4
         scores.append(
             {
                 "skill_id": skill_id,
@@ -195,9 +198,9 @@ def scrna_qc_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
         "approval_required": True,
         "commands": [
             f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/check_environment.py --json",
-            f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input {input_path} --output-dir {qc_out} --dry-run --json",
+            f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input {quote_arg(input_path)} --output-dir {quote_arg(qc_out)} --dry-run --json",
         ],
-        "approved_command": f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input {input_path} --output-dir {qc_out} --approved true --write-manifest",
+        "approved_command": f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input {quote_arg(input_path)} --output-dir {quote_arg(qc_out)} --approved true --write-manifest",
     }
 
 
@@ -209,10 +212,10 @@ def scvi_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
         "model": model,
         "commands": [
             "python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json",
-            f"python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input {input_path} --task \"{prompt[:80]}\" --json",
-            f"python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input {input_path} --output-dir {scvi_out} --model {model} --dry-run --json",
+            f"python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input {quote_arg(input_path)} --task {quote_arg(prompt[:80])} --json",
+            f"python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input {quote_arg(input_path)} --output-dir {quote_arg(scvi_out)} --model {model} --dry-run --json",
         ],
-        "approved_command": f"python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input {input_path} --output-dir {scvi_out} --model {model} --approved true",
+        "approved_command": f"python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input {quote_arg(input_path)} --output-dir {quote_arg(scvi_out)} --model {model} --approved true",
     }
 
 
@@ -221,7 +224,7 @@ def report_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
     return {
         "approval_required": False,
         "commands": [
-            f"python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest {input_path} --out {report}",
+            f"python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest {quote_arg(input_path)} --out {quote_arg(report)}",
         ],
     }
 
@@ -252,16 +255,20 @@ def nextflow_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]
     nf_out = outdir / pipeline
     sheet = nf_out / "samplesheet.csv"
     revision = " --revision 1.2.0" if pipeline == "riboseq" else " --revision 4.1.0" if pipeline == "scrnaseq" else " --revision dev" if pipeline == "spatialvi" else ""
-    metadata = f" --metadata {input_path / 'metadata.csv'}" if pipeline == "spatialvi" else ""
+    metadata = f" --metadata {quote_arg(input_path / 'metadata.csv')}" if pipeline == "spatialvi" else ""
     return {
         "approval_required": True,
         "pipeline": pipeline,
         "commands": [
             "python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json",
-            f"python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline {pipeline} --input {input_path} --out {sheet}{metadata}",
-            f"python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline {pipeline} --input {sheet} --outdir {nf_out} --profile singularity{revision} --dry-run --json",
+            f"python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline {pipeline} --input {quote_arg(input_path)} --out {quote_arg(sheet)}{metadata}",
+            f"python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline {pipeline} --input {quote_arg(sheet)} --outdir {quote_arg(nf_out)} --profile singularity{revision} --dry-run --json",
         ],
     }
+
+
+def quote_arg(value: str | Path) -> str:
+    return shlex.quote(str(value))
 
 
 def requirements_for(skill: str) -> list[str]:

@@ -58,6 +58,9 @@ def test_skill_registry_paths_are_complete() -> None:
             "workflow_diagram",
         ]:
             assert key in entry
+        assert entry["schemas"], entry["skill_id"]
+        assert entry["workflow_diagram"], entry["skill_id"]
+        assert entry["router_keywords"], entry["skill_id"]
     assert validate_registry_paths(registry) == []
 
 

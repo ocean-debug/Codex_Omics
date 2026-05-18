@@ -365,6 +365,8 @@ def test_nextflow_command_can_write_pull_timeout_config(tmp_path: Path) -> None:
     assert "outdir:" in params
     assert manifest["outputs"]["params_file"].endswith("params.yaml")
     assert manifest["schema_validation"]["status"] == "not_provided"
+    assert manifest["parameter_audit"]["missing_from_command"] == []
+    assert {"input", "outdir"}.issubset(set(manifest["parameter_audit"]["params_file_keys"]))
 
 
 def test_riboseq_command_includes_reference_and_contrasts(tmp_path: Path) -> None:
@@ -532,6 +534,7 @@ def test_spatialvi_command_defaults_dev_and_accepts_spaceranger_options(tmp_path
     assert manifest["parameters"]["revision"] == "dev"
     assert manifest["parameters"]["extra_params"] == {"custom_flag": "value"}
     assert (outdir / "params.yaml").read_text(encoding="utf-8").count("custom_flag") == 1
+    assert manifest["parameter_audit"]["missing_from_command"] == []
 
 
 def test_nextflow_command_inspects_local_pipeline_schema(tmp_path: Path) -> None:
