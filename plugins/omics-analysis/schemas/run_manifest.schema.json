@@ -17,7 +17,12 @@
     "software": {"type": "object"},
     "commands": {"type": "array", "items": {"type": "string"}},
     "logs": {"type": "array", "items": {"type": "string"}},
-    "errors": {"type": "array", "items": {"type": "object"}}
+    "errors": {"type": "array", "items": {"type": "object"}},
+    "interpretation": {"type": ["object", "array", "string"]},
+    "methods_text": {"type": "string"},
+    "qc_summary": {"type": "object"},
+    "auto_fix_plan": {"type": "array", "items": {"type": "string"}},
+    "schema_validation": {"type": "object"}
   },
   "additionalProperties": true
 }

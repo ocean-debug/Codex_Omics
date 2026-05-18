@@ -11,58 +11,104 @@ def render_report(manifest: dict[str, Any], title: str = "Analysis Report") -> s
     lines = [
         f"# {title}",
         "",
+        "## Analysis Overview",
+        "",
         f"- Skill: `{manifest.get('skill', 'unknown')}`",
         f"- Status: `{manifest.get('status', 'unknown')}`",
         f"- Run ID: `{manifest.get('run_id', 'unknown')}`",
         f"- Created: `{manifest.get('created_at', 'unknown')}`",
-        "",
-        "## Key Results",
-        "",
-        *key_results(manifest),
-        "",
-        "## Inputs",
-        "",
-        "```json",
-        json.dumps(manifest.get("inputs", {}), indent=2, sort_keys=True, default=str),
-        "```",
-        "",
-        "## Parameters",
-        "",
-        "```json",
-        json.dumps(manifest.get("parameters", {}), indent=2, sort_keys=True, default=str),
-        "```",
-        "",
-        "## Outputs",
-        "",
-        "```json",
-        json.dumps(manifest.get("outputs", {}), indent=2, sort_keys=True, default=str),
-        "```",
-        "",
-        "## Commands",
-        "",
     ]
-    commands = manifest.get("commands") or []
-    lines.extend([f"- `{command}`" for command in commands] or ["- No commands recorded."])
-    if manifest.get("errors"):
-        lines.extend(["", "## Errors", "", "```json", json.dumps(manifest["errors"], indent=2, sort_keys=True, default=str), "```"])
-    if manifest.get("warnings"):
-        lines.extend(["", "## Warnings", "", "```json", json.dumps(manifest["warnings"], indent=2, sort_keys=True, default=str), "```"])
+    if manifest.get("completed_at"):
+        lines.append(f"- Completed: `{manifest.get('completed_at')}`")
+    if manifest.get("methods_text"):
+        lines.extend(["", "### Methods-ready Text", "", str(manifest["methods_text"])])
+    lines.extend(["", "## Input Data Summary", "", "```json", json.dumps(manifest.get("inputs", {}), indent=2, sort_keys=True, default=str), "```"])
     lines.extend(
         [
             "",
-            "## Software",
+            "## Environment and Dependencies",
             "",
             "```json",
-            json.dumps(manifest.get("software", {}), indent=2, sort_keys=True, default=str),
+            json.dumps({"environment": manifest.get("environment", {}), "software": manifest.get("software", {})}, indent=2, sort_keys=True, default=str),
             "```",
             "",
-            "## Suggested Next Steps",
+            "## Methods and Parameters",
             "",
-            *next_steps(manifest),
+            "```json",
+            json.dumps(manifest.get("parameters", {}), indent=2, sort_keys=True, default=str),
+            "```",
+            "",
+            "## Results and QC Interpretation",
+            "",
+            *key_results(manifest),
+        ]
+    )
+    if manifest.get("qc_summary"):
+        lines.extend(["", "### QC Summary", "", "```json", json.dumps(manifest["qc_summary"], indent=2, sort_keys=True, default=str), "```"])
+    if manifest.get("interpretation"):
+        lines.extend(["", "### Result Interpretation", "", *format_interpretation(manifest["interpretation"])])
+    lines.extend(["", "### Outputs", "", "```json", json.dumps(manifest.get("outputs", {}), indent=2, sort_keys=True, default=str), "```"])
+
+    lines.extend(["", "## Warnings / Failures / Suggested Fixes", ""])
+    if manifest.get("errors"):
+        lines.extend(["### Errors", "", "```json", json.dumps(manifest["errors"], indent=2, sort_keys=True, default=str), "```", ""])
+    if manifest.get("warnings"):
+        lines.extend(["### Warnings", "", "```json", json.dumps(manifest["warnings"], indent=2, sort_keys=True, default=str), "```", ""])
+    auto_fix_plan = manifest.get("auto_fix_plan") or collect_auto_fix_plan(manifest)
+    if auto_fix_plan:
+        lines.extend(["### Suggested Fixes", "", *[f"- {item}" for item in auto_fix_plan]])
+    else:
+        lines.extend(next_steps(manifest))
+
+    lines.extend(["", "## Reproducibility Appendix", "", "### Commands", ""])
+    commands = manifest.get("commands") or []
+    lines.extend([f"- `{command}`" for command in commands] or ["- No commands recorded."])
+    lines.extend(
+        [
+            "",
+            "### Manifest Pointers",
+            "",
+            "```json",
+            json.dumps(
+                {"outputs": manifest.get("outputs", {}), "logs": manifest.get("logs", []), "schema_version": manifest.get("schema_version")},
+                indent=2,
+                sort_keys=True,
+                default=str,
+            ),
+            "```",
             "",
         ]
     )
     return "\n".join(lines)
+
+
+def format_interpretation(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [f"- {item}" for item in value]
+    if isinstance(value, dict):
+        lines: list[str] = []
+        for key, item in value.items():
+            if isinstance(item, list):
+                lines.append(f"- {key}:")
+                lines.extend(f"  - {entry}" for entry in item)
+            else:
+                lines.append(f"- {key}: {item}")
+        return lines
+    return [f"- {value}"]
+
+
+def collect_auto_fix_plan(manifest: dict[str, Any]) -> list[str]:
+    fixes: list[str] = []
+    for error in manifest.get("errors", []) or []:
+        if not isinstance(error, dict):
+            continue
+        for item in error.get("auto_fix_plan", []) or []:
+            if item not in fixes:
+                fixes.append(str(item))
+        suggested = error.get("suggested_fix")
+        if suggested and suggested not in fixes:
+            fixes.append(str(suggested))
+    return fixes
 
 
 def key_results(manifest: dict[str, Any]) -> list[str]:

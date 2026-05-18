@@ -8,6 +8,10 @@ Codex-Omics is plugin-only. Load `plugins/omics-analysis/` in Codex, then use th
 route or select skill -> check environment -> validate input -> dry-run -> approved run -> manifest/report
 ```
 
+The router reads `plugins/omics-analysis/skill_registry.yaml` and writes a
+structured `router_plan` with detected intent, input inventory, candidate
+scores, selected skill, blockers, warnings, and next actions.
+
 ```bash
 python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --prompt "run scVI integration" --input data --outdir results/route --json
 ```
@@ -28,11 +32,12 @@ Reports include raw-count source checks, filtering summaries, and batch-aware co
 ```bash
 python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/scvi-tools/scripts/list_models.py --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input cells.h5ad --task "batch correction" --json
 python plugins/omics-analysis/skills/scvi-tools/scripts/validate_adata.py --input cells.h5ad --model SCVI --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --dry-run --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --seed 0 --dry-run --json
 ```
 
-Model-specific validation covers `SCVI`, `SCANVI`, `TOTALVI`, `PEAKVI`, and `MULTIVI`. Training requires `--approved true`.
+Model-specific validation covers `SCVI`, `SCANVI`, `TOTALVI`, `PEAKVI`, and `MULTIVI`. Training requires `--approved true` and records seed, timing, GPU memory, training history, and lightweight latent QC diagnostics when available.
 
 ## nextflow-development
 
@@ -50,6 +55,7 @@ python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow
 ```
 
 Failed execution records stdout/stderr, `.nextflow.log` when available, output inventory, and a classified failure reason.
+Planning also writes `params.yaml`; completed runs parse MultiQC data when present and add interpretation plus suggested fixes to the report.
 
 ## Reports and install planning
 

@@ -1,0 +1,142 @@
+schema_version: "1.0"
+skills:
+  omics-router:
+    skill_id: "omics-router"
+    tasks: ["route_request", "inspect_input", "build_router_plan"]
+    input_formats: ["prompt", "directory", "file"]
+    constraints: ["plugin_local_only", "plan_only", "explainable_decision"]
+    scripts:
+      route: "skills/omics-router/scripts/route_omics.py"
+    schemas:
+      input: "skills/omics-router/schemas/input.schema.json"
+      output: "skills/omics-router/schemas/output.schema.json"
+      run: "skills/omics-router/schemas/run.schema.json"
+    outputs: ["omics_route_plan.json"]
+    approval:
+      required_for_execution: false
+      default_mode: "planned"
+    reporting:
+      manifest_required: false
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: []
+    router_keywords: ["route", "choose skill", "which workflow", "omics request"]
+    workflow_diagram: "skills/omics-router/references/workflow.md"
+  nextflow-development:
+    skill_id: "nextflow-development"
+    tasks: ["nfcore_workflow", "samplesheet", "nextflow_command", "approved_execution", "multiqc_summary"]
+    input_formats: ["fastq", "samplesheet", "metadata_csv", "reference_fasta", "reference_gtf", "nextflow_config"]
+    constraints: ["dry_run_default", "approval_required", "no_dependency_install"]
+    scripts:
+      check_environment: "skills/nextflow-development/scripts/check_environment.py"
+      detect_data_type: "skills/nextflow-development/scripts/detect_data_type.py"
+      generate_samplesheet: "skills/nextflow-development/scripts/generate_samplesheet.py"
+      build_command: "skills/nextflow-development/scripts/build_nextflow_command.py"
+      run: "skills/nextflow-development/scripts/run_nextflow.py"
+      summarize_multiqc: "skills/nextflow-development/scripts/summarize_multiqc.py"
+    schemas:
+      input: "skills/nextflow-development/schemas/input.schema.json"
+      output: "skills/nextflow-development/schemas/output.schema.json"
+      run: "skills/nextflow-development/schemas/run.schema.json"
+    outputs: ["command.sh", "params.yaml", "run_manifest.json", "report.md", "nfcore_out/"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/nextflow-development/examples/minimal.json"]
+    router_keywords: ["fastq", "nf-core", "nextflow", "rnaseq", "scrnaseq", "riboseq", "ribo-seq", "spatialvi", "visium", "spaceranger", "atacseq", "sarek", "translational efficiency"]
+    workflow_diagram: "skills/nextflow-development/references/workflow.md"
+  scvi-tools:
+    skill_id: "scvi-tools"
+    tasks: ["model_recommendation", "validate_anndata", "train_scvi_model", "latent_embedding", "training_diagnostics"]
+    input_formats: ["h5ad", "anndata"]
+    constraints: ["dry_run_default", "approval_required", "no_dependency_install"]
+    scripts:
+      check_environment: "skills/scvi-tools/scripts/check_environment.py"
+      list_models: "skills/scvi-tools/scripts/list_models.py"
+      recommend_model: "skills/scvi-tools/scripts/recommend_model.py"
+      validate_adata: "skills/scvi-tools/scripts/validate_adata.py"
+      train: "skills/scvi-tools/scripts/train_model.py"
+    schemas:
+      input: "skills/scvi-tools/schemas/input.schema.json"
+      output: "skills/scvi-tools/schemas/output.schema.json"
+      run: "skills/scvi-tools/schemas/run.schema.json"
+    outputs: ["model/", "adata_trained.h5ad", "scvi_model_summary.json", "diagnostics/", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/scvi-tools/examples/minimal.json"]
+    router_keywords: ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch correction", "label transfer", "cite-seq", "multiome", "latent"]
+    workflow_diagram: "skills/scvi-tools/references/workflow.md"
+  single-cell-rna-qc:
+    skill_id: "single-cell-rna-qc"
+    tasks: ["scrna_qc", "validate_counts", "filter_cells", "qc_plots"]
+    input_formats: ["h5ad", "tenx_h5", "tenx_mtx"]
+    constraints: ["dry_run_default", "approval_required", "no_in_place_mutation"]
+    scripts:
+      check_environment: "skills/single-cell-rna-qc/scripts/check_environment.py"
+      validate_input: "skills/single-cell-rna-qc/scripts/validate_input.py"
+      run: "skills/single-cell-rna-qc/scripts/qc_analysis.py"
+      summarize: "skills/single-cell-rna-qc/scripts/summarize.py"
+    schemas:
+      input: "skills/single-cell-rna-qc/schemas/input.schema.json"
+      output: "skills/single-cell-rna-qc/schemas/output.schema.json"
+      run: "skills/single-cell-rna-qc/schemas/run.schema.json"
+    outputs: ["with_qc.h5ad", "filtered.h5ad", "qc_summary.json", "qc plots", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/single-cell-rna-qc/examples/minimal.json"]
+    router_keywords: ["qc", "quality control", "h5ad", "10x", "mitochondrial", "filtering", "scrna"]
+    workflow_diagram: "skills/single-cell-rna-qc/references/workflow.md"
+  omics-report:
+    skill_id: "omics-report"
+    tasks: ["render_report", "summarize_manifest", "methods_text"]
+    input_formats: ["run_manifest_json", "report_md"]
+    constraints: ["read_only_inputs", "report_generation"]
+    scripts:
+      render_report: "skills/omics-report/scripts/render_report.py"
+    schemas:
+      input: "skills/omics-report/schemas/input.schema.json"
+      output: "skills/omics-report/schemas/output.schema.json"
+      run: "skills/omics-report/schemas/run.schema.json"
+    outputs: ["report.md"]
+    approval:
+      required_for_execution: false
+      default_mode: "render"
+    reporting:
+      manifest_required: false
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: []
+    router_keywords: ["report", "manifest", "methods", "summarize results", "interpret results"]
+    workflow_diagram: "skills/omics-report/references/workflow.md"
+  skill-authoring-kit:
+    skill_id: "skill-authoring-kit"
+    tasks: ["create_skill", "extend_plugin", "author_workflow", "add_analysis_skill"]
+    input_formats: ["requirements", "workflow_plan"]
+    constraints: ["plugin_local_only", "no_backend_cli", "tests_required"]
+    scripts: {}
+    schemas:
+      input: "skills/skill-authoring-kit/schemas/input.schema.json"
+      output: "skills/skill-authoring-kit/schemas/output.schema.json"
+      run: "skills/skill-authoring-kit/schemas/run.schema.json"
+    outputs: ["SKILL.md", "scripts/", "references/", "schemas/", "examples/", "tests"]
+    approval:
+      required_for_execution: false
+      default_mode: "authoring"
+    reporting:
+      manifest_required: false
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: []
+    router_keywords: ["new skill", "add workflow", "bulk-rna-de", "go-enrichment", "cellchat", "grn", "author skill", "create skill"]
+    workflow_diagram: "skills/skill-authoring-kit/references/workflow.md"

@@ -20,6 +20,12 @@ def load_json_or_simple_yaml(path: str | Path) -> dict[str, Any]:
 
 
 def parse_simple_yaml(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    if stripped.startswith("{"):
+        loaded = json.loads(stripped)
+        if not isinstance(loaded, dict):
+            raise TypeError("Expected object in JSON-compatible YAML")
+        return loaded
     try:
         import yaml  # type: ignore
 
@@ -56,6 +62,12 @@ def _parse_flat_yaml(text: str) -> dict[str, Any]:
 
 def coerce_scalar(value: str) -> Any:
     lowered = value.strip().strip("'\"")
+    raw = value.strip()
+    if raw.startswith(("[", "{")):
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            pass
     if lowered.lower() in {"true", "false"}:
         return lowered.lower() == "true"
     if lowered.lower() in {"null", "none"}:

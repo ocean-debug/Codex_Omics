@@ -78,6 +78,69 @@ def build_command(args: argparse.Namespace) -> str:
     return " ".join(shlex.quote(part) for part in command)
 
 
+def build_params(args: argparse.Namespace) -> dict[str, object]:
+    params: dict[str, object] = {"input": args.input, "outdir": args.outdir}
+    for key in [
+        "genome",
+        "aligner",
+        "protocol",
+        "fasta",
+        "gtf",
+        "cellranger_index",
+        "contrasts",
+        "spaceranger_reference",
+        "spaceranger_probeset",
+        "hd_bin_size",
+        "max_cpus",
+        "max_memory",
+    ]:
+        value = getattr(args, key)
+        if value is not None:
+            params[key] = value
+    for key in ["skip_integration", "skip_downstream"]:
+        if getattr(args, key):
+            params[key] = True
+    if args.skip_ribotish and args.pipeline.replace("nf-core/", "").lower() == "riboseq":
+        params["skip_ribotish"] = True
+    params.update(args.extra_params)
+    return params
+
+
+def render_simple_yaml(payload: dict[str, object]) -> str:
+    lines = []
+    for key, value in payload.items():
+        if isinstance(value, bool):
+            rendered = "true" if value else "false"
+        elif isinstance(value, (int, float)):
+            rendered = str(value)
+        else:
+            rendered = json.dumps(str(value))
+        lines.append(f"{key}: {rendered}")
+    return "\n".join(lines) + "\n"
+
+
+def inspect_pipeline_schema(path: str | None, params: dict[str, object]) -> dict[str, object]:
+    if not path:
+        return {"status": "not_provided", "validation_mode": "local_schema_only", "errors": []}
+    schema_path = Path(path)
+    if not schema_path.exists():
+        return {"status": "missing", "schema": str(schema_path), "validation_mode": "local_schema_only", "errors": [f"Schema file does not exist: {schema_path}"]}
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {"status": "error", "schema": str(schema_path), "validation_mode": "local_schema_only", "errors": [str(exc)]}
+    properties = schema.get("properties", {}) if isinstance(schema, dict) else {}
+    unknown = sorted(key for key in params if properties and key not in properties)
+    return {
+        "status": "ok",
+        "schema": str(schema_path),
+        "validation_mode": "local_schema_only",
+        "declared_parameters": sorted(properties.keys()) if isinstance(properties, dict) else [],
+        "unknown_params": unknown,
+        "errors": [],
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build a safe Nextflow command without executing it.")
     parser.add_argument("--pipeline", required=True)
@@ -100,6 +163,7 @@ def main() -> int:
     parser.add_argument("--skip-integration", action="store_true", help="Skip nf-core/spatialvi integration steps.")
     parser.add_argument("--skip-downstream", action="store_true", help="Skip nf-core/spatialvi downstream analysis steps.")
     parser.add_argument("--extra-param", action="append", default=[], help="Repeatable passthrough nf-core parameter in KEY=VALUE form.")
+    parser.add_argument("--pipeline-schema", help="Optional local nf-core nextflow_schema.json for parameter inspection. No network fetch is performed.")
     parser.add_argument("--max-cpus", type=int)
     parser.add_argument("--max-memory")
     parser.add_argument("--pull-timeout", help="Optional Singularity/Apptainer pull timeout, for example '4 h' or '240 min'.")
@@ -157,13 +221,24 @@ def main() -> int:
         write_text(nextflow_config, "\n".join(lines) + "\n")
     args.nextflow_config = str(nextflow_config) if nextflow_config else None
     effective_revision = args.revision or DEFAULT_REVISIONS.get(pipeline)
+    params = build_params(args)
+    params_file = outdir / "params.yaml"
+    write_text(params_file, render_simple_yaml(params))
+    schema_validation = inspect_pipeline_schema(args.pipeline_schema, params)
     command = build_command(args)
     write_text(outdir / "command.sh", command + "\n")
     manifest = base_manifest(
         skill="nextflow-development",
         status="planned",
         inputs={"samplesheet": args.input, "fasta": args.fasta, "gtf": args.gtf, "contrasts": args.contrasts},
-        outputs={"outdir": str(outdir), "command": str(outdir / "command.sh"), "nextflow_config": args.nextflow_config, "manifest": str(outdir / "run_manifest.json"), "report": str(outdir / "report.md")},
+        outputs={
+            "outdir": str(outdir),
+            "command": str(outdir / "command.sh"),
+            "params_file": str(params_file),
+            "nextflow_config": args.nextflow_config,
+            "manifest": str(outdir / "run_manifest.json"),
+            "report": str(outdir / "report.md"),
+        },
         parameters={
             "pipeline": args.pipeline,
             "profile": args.profile,
@@ -185,13 +260,17 @@ def main() -> int:
             "pull_timeout": args.pull_timeout,
             "singularity_pull_docker_container": args.singularity_pull_docker_container,
             "overwrite_reports": args.overwrite_reports,
+            "params_file": str(params_file),
+            "pipeline_schema": args.pipeline_schema,
         },
         commands=[command],
     )
-    manifest["plan"] = {"approval_required": True, "will_execute": False, "schema_validation": "Use nf-core/nf-schema validation before approved execution when available."}
+    manifest["params"] = params
+    manifest["schema_validation"] = schema_validation
+    manifest["plan"] = {"approval_required": True, "will_execute": False, "schema_validation": schema_validation}
     write_manifest(outdir / "run_manifest.json", manifest)
     write_report(outdir / "report.md", manifest, title="Nextflow Workflow Plan")
-    print(json.dumps({"command": command, "manifest": str(outdir / "run_manifest.json"), "report": str(outdir / "report.md")}, indent=2, sort_keys=True))
+    print(json.dumps({"command": command, "params_file": str(params_file), "manifest": str(outdir / "run_manifest.json"), "report": str(outdir / "report.md")}, indent=2, sort_keys=True))
     return 0
 
 

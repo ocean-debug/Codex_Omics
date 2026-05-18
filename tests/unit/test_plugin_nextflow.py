@@ -359,6 +359,12 @@ def test_nextflow_command_can_write_pull_timeout_config(tmp_path: Path) -> None:
     assert "pullTimeout = '4 h'" in config
     assert "ext.singularity_pull_docker_container = true" in config
     assert "report { overwrite = true }" in config
+    params = (outdir / "params.yaml").read_text(encoding="utf-8")
+    manifest = json.loads((outdir / "run_manifest.json").read_text(encoding="utf-8"))
+    assert "input:" in params
+    assert "outdir:" in params
+    assert manifest["outputs"]["params_file"].endswith("params.yaml")
+    assert manifest["schema_validation"]["status"] == "not_provided"
 
 
 def test_riboseq_command_includes_reference_and_contrasts(tmp_path: Path) -> None:
@@ -409,6 +415,7 @@ def test_riboseq_command_includes_reference_and_contrasts(tmp_path: Path) -> Non
     assert manifest["parameters"]["revision"] == "1.2.0"
     assert manifest["inputs"]["contrasts"] == str(contrasts)
     assert manifest["parameters"]["skip_ribotish"] is True
+    assert (outdir / "params.yaml").exists()
 
 
 def test_skip_ribotish_is_rejected_for_non_riboseq_pipeline(tmp_path: Path) -> None:
@@ -524,3 +531,72 @@ def test_spatialvi_command_defaults_dev_and_accepts_spaceranger_options(tmp_path
     assert "--custom_flag value" in command
     assert manifest["parameters"]["revision"] == "dev"
     assert manifest["parameters"]["extra_params"] == {"custom_flag": "value"}
+    assert (outdir / "params.yaml").read_text(encoding="utf-8").count("custom_flag") == 1
+
+
+def test_nextflow_command_inspects_local_pipeline_schema(tmp_path: Path) -> None:
+    sheet = tmp_path / "samplesheet.csv"
+    sheet.write_text("sample,fastq_1,fastq_2\ns,a_R1.fastq.gz,a_R2.fastq.gz\n", encoding="utf-8")
+    schema = tmp_path / "nextflow_schema.json"
+    schema.write_text(json.dumps({"type": "object", "properties": {"input": {}, "outdir": {}, "aligner": {}}}), encoding="utf-8")
+    outdir = tmp_path / "plan"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py",
+            "--pipeline",
+            "scrnaseq",
+            "--input",
+            str(sheet),
+            "--outdir",
+            str(outdir),
+            "--aligner",
+            "cellranger",
+            "--pipeline-schema",
+            str(schema),
+            "--dry-run",
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    manifest = json.loads((outdir / "run_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["schema_validation"]["status"] == "ok"
+    assert "aligner" in manifest["schema_validation"]["declared_parameters"]
+
+
+def test_multiqc_summary_handles_present_and_missing_data(tmp_path: Path) -> None:
+    script = Path("plugins/omics-analysis/skills/nextflow-development/scripts/summarize_multiqc.py")
+    spec = importlib.util.spec_from_file_location("summarize_multiqc", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    missing = module.summarize_multiqc(tmp_path)
+    assert missing["status"] == "missing"
+
+    data_dir = tmp_path / "nfcore_out" / "multiqc" / "multiqc_data"
+    data_dir.mkdir(parents=True)
+    (data_dir / "multiqc_data.json").write_text(
+        json.dumps({"report_general_stats_data": [{"sample1": {"x": 1}}], "report_saved_raw_data": {"fastqc_data": {}}}),
+        encoding="utf-8",
+    )
+    present = module.summarize_multiqc(tmp_path)
+    assert present["status"] == "ok"
+    assert present["summary"]["samples_in_general_stats"] == 1
+
+
+def test_nextflow_failure_adds_auto_fix_plan() -> None:
+    script = Path("plugins/omics-analysis/skills/nextflow-development/scripts/run_nextflow.py")
+    spec = importlib.util.spec_from_file_location("run_nextflow", script)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    failure = module.classify_failure("unknown parameter --foo")
+    assert failure["error_type"] == "InvalidPipelineParameters"
+    assert failure["auto_fix_plan"]

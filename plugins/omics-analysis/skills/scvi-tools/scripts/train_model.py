@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +34,7 @@ def main() -> int:
     parser.add_argument("--protein-obsm", default="protein_expression")
     parser.add_argument("--max-epochs", type=int, default=20)
     parser.add_argument("--accelerator", default="auto")
+    parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--write-manifest", action="store_true")
@@ -54,6 +57,7 @@ def train_or_plan(args: argparse.Namespace) -> dict[str, Any]:
         "protein_obsm": args.protein_obsm,
         "max_epochs": args.max_epochs,
         "accelerator": args.accelerator,
+        "seed": args.seed,
     }
     outputs = {"outdir": str(outdir), "manifest": str(outdir / "run_manifest.json"), "report": str(outdir / "report.md")}
     if env["blockers"]:
@@ -77,7 +81,7 @@ def train_or_plan(args: argparse.Namespace) -> dict[str, Any]:
             parameters=parameters,
             warnings=env["warnings"],
         )
-        manifest["plan"] = {"approval_required": True, "will_train": args.model, "will_write": ["model/", "adata_trained.h5ad", "scvi_model_summary.json"]}
+        manifest["plan"] = {"approval_required": True, "will_train": args.model, "will_write": ["model/", "adata_trained.h5ad", "scvi_model_summary.json", "diagnostics/"]}
         return finish(outdir, manifest)
     return execute_training(args, outdir, parameters, env)
 
@@ -86,6 +90,9 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
     import scanpy as sc
     import scvi
 
+    set_random_seed(args.seed)
+    start = time.perf_counter()
+    gpu_before = gpu_memory_snapshot()
     adata = sc.read_h5ad(args.input)
     model_name = args.model.upper()
     cls = getattr(scvi.model, model_name)
@@ -108,6 +115,8 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
     cls.setup_anndata(adata, **setup_kwargs)
     model = cls(adata)
     model.train(max_epochs=args.max_epochs)
+    training_time_seconds = time.perf_counter() - start
+    gpu_after = gpu_memory_snapshot()
     latent_key = f"X_{model_name.lower()}"
     if hasattr(model, "get_latent_representation"):
         adata.obsm[latent_key] = model.get_latent_representation()
@@ -122,7 +131,17 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
     trained = outdir / "adata_trained.h5ad"
     adata.write_h5ad(trained)
     model_specific_outputs = add_model_specific_outputs(model_name, model, adata, args, outdir)
-    summary = {"model": model_name, "latent_key": latent_key, "max_epochs": args.max_epochs, "environment": env, "model_specific_outputs": model_specific_outputs}
+    diagnostics = write_diagnostics(outdir, model, adata, args, latent_key, training_time_seconds, gpu_before, gpu_after)
+    summary = {
+        "model": model_name,
+        "latent_key": latent_key,
+        "max_epochs": args.max_epochs,
+        "seed": args.seed,
+        "training_time_seconds": training_time_seconds,
+        "environment": env,
+        "model_specific_outputs": model_specific_outputs,
+        "diagnostics": diagnostics,
+    }
     write_json(outdir / "scvi_model_summary.json", summary)
     outputs = {
         "outdir": str(outdir),
@@ -131,6 +150,7 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
         "model_dir": str(model_dir),
         "trained_h5ad": str(trained),
         "summary": str(outdir / "scvi_model_summary.json"),
+        "diagnostics": str(outdir / "diagnostics" / "diagnostics.json"),
     }
     manifest = base_manifest(
         skill="scvi-tools",
@@ -141,7 +161,172 @@ def execute_training(args: argparse.Namespace, outdir: Path, parameters: dict[st
         warnings=env["warnings"],
     )
     manifest["summary"] = summary
+    manifest["qc_summary"] = diagnostics.get("latent_qc", {})
+    manifest["interpretation"] = diagnostics.get("interpretation", [])
     return finish(outdir, manifest)
+
+
+def set_random_seed(seed: int) -> None:
+    try:
+        import scvi
+
+        scvi.settings.seed = seed
+    except Exception:
+        pass
+    try:
+        import torch
+
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+            torch.cuda.reset_peak_memory_stats()
+    except Exception:
+        pass
+
+
+def gpu_memory_snapshot() -> dict[str, Any]:
+    try:
+        import torch
+
+        if not torch.cuda.is_available():
+            return {"cuda_available": False}
+        return {
+            "cuda_available": True,
+            "device": torch.cuda.get_device_name(0),
+            "allocated_bytes": int(torch.cuda.memory_allocated()),
+            "reserved_bytes": int(torch.cuda.memory_reserved()),
+            "max_allocated_bytes": int(torch.cuda.max_memory_allocated()),
+        }
+    except Exception as exc:
+        return {"cuda_available": False, "error": str(exc)}
+
+
+def write_diagnostics(
+    outdir: Path,
+    model: Any,
+    adata: Any,
+    args: argparse.Namespace,
+    latent_key: str,
+    training_time_seconds: float,
+    gpu_before: dict[str, Any],
+    gpu_after: dict[str, Any],
+) -> dict[str, Any]:
+    diagnostics_dir = ensure_outdir(outdir / "diagnostics")
+    history = extract_history(model)
+    if history:
+        write_json(diagnostics_dir / "training_history.json", history)
+        write_history_csv(diagnostics_dir / "training_history.csv", history)
+        maybe_plot_history(diagnostics_dir / "training_history.png", history)
+    latent_qc = latent_embedding_qc(adata, latent_key, args.batch_key, args.labels_key)
+    diagnostics = {
+        "seed": args.seed,
+        "training_time_seconds": training_time_seconds,
+        "gpu_memory": {"before": gpu_before, "after": gpu_after},
+        "history_files": {
+            "json": str(diagnostics_dir / "training_history.json") if history else None,
+            "csv": str(diagnostics_dir / "training_history.csv") if history else None,
+            "plot": str(diagnostics_dir / "training_history.png") if (diagnostics_dir / "training_history.png").exists() else None,
+        },
+        "history_keys": sorted(history.keys()),
+        "latent_qc": latent_qc,
+        "reconstruction_diagnostics": reconstruction_diagnostics(model),
+        "interpretation": interpret_diagnostics(latent_qc, history),
+    }
+    write_json(diagnostics_dir / "diagnostics.json", diagnostics)
+    return diagnostics
+
+
+def extract_history(model: Any) -> dict[str, list[float]]:
+    history: dict[str, list[float]] = {}
+    raw = getattr(model, "history", None)
+    if raw is None:
+        return history
+    try:
+        for key, value in raw.items():
+            series = getattr(value, "values", value)
+            flattened = []
+            for item in list(series):
+                try:
+                    flattened.append(float(item))
+                except Exception:
+                    continue
+            if flattened:
+                history[str(key)] = flattened
+    except Exception:
+        return {}
+    return history
+
+
+def write_history_csv(path: Path, history: dict[str, list[float]]) -> None:
+    keys = sorted(history)
+    max_len = max((len(values) for values in history.values()), default=0)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["epoch", *keys])
+        writer.writeheader()
+        for index in range(max_len):
+            row: dict[str, Any] = {"epoch": index}
+            for key in keys:
+                values = history[key]
+                row[key] = values[index] if index < len(values) else ""
+            writer.writerow(row)
+
+
+def maybe_plot_history(path: Path, history: dict[str, list[float]]) -> None:
+    try:
+        import matplotlib.pyplot as plt
+
+        for key, values in history.items():
+            plt.plot(range(len(values)), values, label=key)
+        plt.xlabel("epoch")
+        plt.ylabel("value")
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig(path)
+        plt.close()
+    except Exception:
+        return
+
+
+def latent_embedding_qc(adata: Any, latent_key: str, batch_key: str | None, labels_key: str | None) -> dict[str, Any]:
+    latent = adata.obsm.get(latent_key) if latent_key in adata.obsm else None
+    qc: dict[str, Any] = {
+        "latent_key": latent_key,
+        "latent_shape": list(getattr(latent, "shape", [])) if latent is not None else [],
+        "has_umap": "X_umap" in adata.obsm,
+        "has_leiden": "leiden" in adata.obs,
+        "metric_type": "lightweight_proxy",
+    }
+    if batch_key and batch_key in adata.obs:
+        counts = adata.obs[batch_key].value_counts()
+        qc["batch_mixing_proxy"] = {"key": batch_key, "n_batches": int(counts.shape[0]), "min_batch_fraction": float((counts / counts.sum()).min())}
+    if labels_key and labels_key in adata.obs:
+        counts = adata.obs[labels_key].value_counts()
+        qc["cell_type_conservation_proxy"] = {"key": labels_key, "n_labels": int(counts.shape[0]), "min_label_fraction": float((counts / counts.sum()).min())}
+    return qc
+
+
+def reconstruction_diagnostics(model: Any) -> dict[str, Any]:
+    diagnostics = {"available": False}
+    if hasattr(model, "get_reconstruction_error"):
+        try:
+            value = model.get_reconstruction_error()
+            diagnostics = {"available": True, "reconstruction_error": float(value)}
+        except Exception as exc:
+            diagnostics = {"available": False, "error": str(exc)}
+    return diagnostics
+
+
+def interpret_diagnostics(latent_qc: dict[str, Any], history: dict[str, list[float]]) -> list[str]:
+    interpretation = []
+    if latent_qc.get("latent_shape"):
+        interpretation.append(f"Latent embedding `{latent_qc['latent_key']}` was written with shape {latent_qc['latent_shape']}.")
+    if history:
+        interpretation.append("Training history was captured for loss or ELBO review.")
+    if latent_qc.get("batch_mixing_proxy"):
+        interpretation.append("Batch mixing proxy was recorded; use a formal benchmark for publication-grade integration claims.")
+    if latent_qc.get("cell_type_conservation_proxy"):
+        interpretation.append("Cell type conservation proxy was recorded; validate label preservation before downstream claims.")
+    return interpretation or ["Diagnostics were recorded, but no latent embedding or training history was available for interpretation."]
 
 
 def add_model_specific_outputs(model_name: str, model: Any, adata: Any, args: argparse.Namespace, outdir: Path) -> list[str]:

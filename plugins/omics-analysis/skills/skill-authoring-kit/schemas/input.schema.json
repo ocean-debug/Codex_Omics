@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill Authoring Input",
+  "type": "object",
+  "required": ["request"],
+  "properties": {
+    "request": {"type": "string"},
+    "skill_id": {"type": "string"}
+  },
+  "additionalProperties": true
+}

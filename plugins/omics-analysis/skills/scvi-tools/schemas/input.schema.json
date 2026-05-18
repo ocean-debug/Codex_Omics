@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scvi-tools Input",
+  "type": "object",
+  "required": ["input"],
+  "properties": {
+    "input": {"type": "string"},
+    "model": {"type": "string"},
+    "batch_key": {"type": "string"},
+    "labels_key": {"type": "string"},
+    "protein_obsm": {"type": "string"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Omics Report Run",
+  "type": "object",
+  "required": ["skill", "status", "outputs"],
+  "properties": {
+    "skill": {"type": "string"},
+    "status": {"type": "string"},
+    "outputs": {"type": "object"}
+  },
+  "additionalProperties": true
+}

@@ -20,3 +20,9 @@ Use plugin-local outputs:
 - task-specific summaries
 
 Prefer existing `report.md` when present. If a manifest exists without a report, render one from the manifest with the plugin-local report script.
+
+## References
+
+| Task | Reference |
+|---|---|
+| Seven-section report workflow | `references/workflow.md` |

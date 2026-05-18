@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill Authoring Run",
+  "type": "object",
+  "required": ["skill", "status"],
+  "properties": {
+    "skill": {"type": "string"},
+    "status": {"type": "string"}
+  },
+  "additionalProperties": true
+}

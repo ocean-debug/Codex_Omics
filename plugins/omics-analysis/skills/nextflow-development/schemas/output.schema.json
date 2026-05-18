@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nextflow Development Output",
+  "type": "object",
+  "required": ["outdir", "manifest", "report"],
+  "properties": {
+    "outdir": {"type": "string"},
+    "command": {"type": "string"},
+    "params_file": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  },
+  "additionalProperties": true
+}

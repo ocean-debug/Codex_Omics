@@ -62,9 +62,11 @@ python plugins/omics-analysis/skills/nextflow-development/scripts/run_nextflow.p
 
 | Task | Reference |
 |---|---|
+| Workflow diagram | `references/workflow.md` |
 | Java, Nextflow, nf-core, git, or container setup | `references/installation.md` |
 | Approved execution, manifests, logs, and reports | `references/execution-policy.md` |
 | Generic FASTQ pairing and samplesheet formats | `references/samplesheets.md` |
+| Adding a new nf-core workflow adapter | `references/nfcore-workflow-adapter-template.md` |
 | Bulk RNA-seq with nf-core/rnaseq | `references/pipelines/rnaseq.md` |
 | Single-cell FASTQ with nf-core/scrnaseq | `references/pipelines/scrnaseq.md` |
 | Ribo-seq, TI-seq, and translational efficiency with nf-core/riboseq | `references/pipelines/riboseq.md` |

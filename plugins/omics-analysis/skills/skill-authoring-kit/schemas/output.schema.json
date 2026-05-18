@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Skill Authoring Output",
+  "type": "object",
+  "properties": {
+    "created_paths": {"type": "array"},
+    "tests": {"type": "array"}
+  },
+  "additionalProperties": true
+}

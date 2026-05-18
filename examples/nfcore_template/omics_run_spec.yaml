@@ -1,0 +1,29 @@
+run:
+  name: nfcore_template_command_demo
+  description: Template-only nf-core adapter example. Replace placeholders before use.
+  type: nfcore_pipeline
+  skill: nextflow-development
+inputs:
+  path: ./examples/nfcore_template/fastq
+  type: fastq_directory
+  species: replace_me
+nfcore:
+  pipeline: replace_me
+  version: replace_me
+  official_usage: https://nf-co.re/<pipeline>/<version>/docs/usage/
+  official_output: https://nf-co.re/<pipeline>/<version>/docs/output/
+  params:
+    input: ./examples/nfcore_template/samplesheet.csv
+    outdir: ./results/nfcore_template
+  samplesheet:
+    path: ./examples/nfcore_template/samplesheet.csv
+  metadata:
+    path: ./examples/nfcore_template/metadata.csv
+execution:
+  mode: template_only
+  approved: false
+  profile: singularity
+outputs:
+  outdir: ./results/nfcore_template
+  report: ./results/nfcore_template/report.md
+  manifest: ./results/nfcore_template/run_manifest.json

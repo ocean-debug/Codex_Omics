@@ -15,11 +15,9 @@ python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --promp
 
 ## Routing
 
-- h5ad/10x, QC, mitochondrial filtering -> `single-cell-rna-qc`
-- scVI, scANVI, totalVI, latent embeddings, batch correction -> `scvi-tools`
-- FASTQ, nf-core, Nextflow, rnaseq, scrnaseq, riboseq, spatialvi, Visium, atacseq, sarek -> `nextflow-development`
-- manifest/report summarization -> `omics-report`
-- adding a new reusable omics workflow -> `skill-authoring-kit`
+- Load `plugins/omics-analysis/skill_registry.yaml`.
+- Score candidates using intent, input inventory, constraints, and registered task support.
+- Return a structured `router_plan` with candidate scores, selected skill, blockers, warnings, and next actions.
 
 ## Standard path
 
@@ -28,3 +26,9 @@ check environment -> inspect input -> dry-run/plan -> user approval -> execute -
 ```
 
 Use the selected skill's `scripts/check_environment.py` first. Keep long-running commands in dry-run/planned mode unless the user explicitly approves execution.
+
+## References
+
+| Task | Reference |
+|---|---|
+| Explainable routing workflow | `references/workflow.md` |

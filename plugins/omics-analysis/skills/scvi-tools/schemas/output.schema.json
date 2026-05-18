@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "scvi-tools Output",
+  "type": "object",
+  "required": ["outdir", "manifest", "report"],
+  "properties": {
+    "outdir": {"type": "string"},
+    "model_dir": {"type": "string"},
+    "trained_h5ad": {"type": "string"},
+    "summary": {"type": "string"},
+    "diagnostics": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  },
+  "additionalProperties": true
+}

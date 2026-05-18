@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Omics Report Output",
+  "type": "object",
+  "required": ["report"],
+  "properties": {
+    "report": {"type": "string"},
+    "manifest": {"type": "string"},
+    "status": {"type": "string"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Single-cell RNA QC Output",
+  "type": "object",
+  "required": ["outdir", "manifest", "report"],
+  "properties": {
+    "outdir": {"type": "string"},
+    "with_qc": {"type": "string"},
+    "filtered": {"type": "string"},
+    "summary": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  },
+  "additionalProperties": true
+}

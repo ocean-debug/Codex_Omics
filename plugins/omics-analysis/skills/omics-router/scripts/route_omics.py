@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
 
 from common.env import inspect_nextflow_environment, inspect_scrna_qc_environment, inspect_scvi_environment  # noqa: E402
 from common.io import ensure_outdir, write_json  # noqa: E402
+from common.registry import skill_entries  # noqa: E402
 
 
 def main() -> int:
@@ -35,34 +37,132 @@ def main() -> int:
 def route_request(prompt: str, input_path: Path, outdir: Path) -> dict[str, Any]:
     prompt_l = prompt.lower()
     inventory = inspect_input(input_path)
-    if any(token in prompt_l for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch correction", "latent"]):
-        skill = "scvi-tools"
+    registry = skill_entries()
+    detected_intents = detect_intents(prompt_l)
+    constraints = detect_constraints(prompt_l)
+    candidate_scores = score_candidates(prompt_l, inventory, registry)
+    skill = candidate_scores[0]["skill_id"] if candidate_scores and candidate_scores[0]["score"] > 0 else "omics-router"
+    if skill == "scvi-tools":
         env = inspect_scvi_environment()
         plan = scvi_plan(input_path, outdir, prompt_l)
-    elif inventory["formats"].get("h5ad") or inventory["formats"].get("tenx_h5") or inventory["formats"].get("tenx_mtx") or "qc" in prompt_l:
-        skill = "single-cell-rna-qc"
+    elif skill == "single-cell-rna-qc":
         env = inspect_scrna_qc_environment()
         plan = scrna_qc_plan(input_path, outdir)
-    elif inventory["formats"].get("fastq") or any(token in prompt_l for token in ["rnaseq", "scrnaseq", "single-cell fastq", "cellranger", "cell ranger", "simpleaf", "star-solo", "starsolo", "kallisto", "10x", "atacseq", "sarek", "riboseq", "ribo-seq", "ribosome profiling", "translational efficiency", "tiseq", "spatialvi", "spatial transcriptomics", "visium", "spaceranger", "space ranger", "fastq", "nextflow", "nf-core"]):
-        skill = "nextflow-development"
+    elif skill == "nextflow-development":
         env = inspect_nextflow_environment()
         plan = nextflow_plan(input_path, outdir, prompt_l)
+    elif skill == "omics-report":
+        env = {"status": "ok", "blockers": [], "warnings": []}
+        plan = report_plan(input_path, outdir)
+    elif skill == "skill-authoring-kit":
+        env = {"status": "ok", "blockers": [], "warnings": []}
+        plan = authoring_plan(prompt)
     else:
-        skill = "omics-router"
-        env = {"status": "warning", "blockers": [], "warnings": [{"warning_type": "AmbiguousInput", "message": "No omics workflow could be selected confidently.", "suggested_fix": "Provide a prompt mentioning QC, scVI, rnaseq, scrnaseq, riboseq, spatialvi, atacseq, sarek, FASTQ, h5ad, Visium, or 10x."}]}
+        env = {"status": "warning", "blockers": [], "warnings": [{"warning_type": "AmbiguousInput", "message": "No omics workflow could be selected confidently.", "suggested_fix": "Provide a prompt mentioning QC, scVI, rnaseq, scrnaseq, riboseq, spatialvi, atacseq, sarek, FASTQ, h5ad, Visium, 10x, report, or new skill."}]}
         plan = {"approval_required": False, "commands": []}
+    selected_pipeline = plan.get("pipeline") or plan.get("model")
+    blockers = env.get("blockers", [])
+    warnings = env.get("warnings", [])
+    selection_reason = explain_selection(skill, candidate_scores, inventory, detected_intents)
+    router_plan = {
+        "detected_intents": detected_intents,
+        "input_inventory": inventory,
+        "constraints": constraints,
+        "candidate_scores": candidate_scores,
+        "selected_skill": skill,
+        "selected_pipeline": selected_pipeline,
+        "selection_reason": selection_reason,
+        "blockers": blockers,
+        "warnings": warnings,
+        "next_actions": plan.get("commands", []),
+    }
     return {
         "status": "planned",
         "selected_skill": skill,
+        "selected_pipeline": selected_pipeline,
         "approved": False,
         "input": str(input_path),
         "input_inventory": inventory,
+        "router_plan": router_plan,
         "environment_status": env.get("status"),
         "environment_requirements": requirements_for(skill),
-        "environment_blockers": env.get("blockers", []),
-        "environment_warnings": env.get("warnings", []),
+        "environment_blockers": blockers,
+        "environment_warnings": warnings,
         "plan": plan,
     }
+
+
+def detect_intents(prompt: str) -> list[str]:
+    intents: list[str] = []
+    intent_tokens = {
+        "model_training": ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "train", "latent", "batch correction", "label transfer"],
+        "quality_control": ["qc", "quality control", "filter", "mitochondrial"],
+        "nextflow_workflow": ["nextflow", "nf-core", "rnaseq", "scrnaseq", "riboseq", "spatialvi", "atacseq", "sarek", "fastq"],
+        "reporting": ["report", "manifest", "methods", "interpret"],
+        "skill_authoring": ["new skill", "add workflow", "bulk-rna-de", "go-enrichment", "cellchat", "grn", "author skill"],
+    }
+    for intent, tokens in intent_tokens.items():
+        if any(token in prompt for token in tokens):
+            intents.append(intent)
+    return intents or ["unspecified"]
+
+
+def detect_constraints(prompt: str) -> dict[str, bool]:
+    return {
+        "dry_run_requested": any(token in prompt for token in ["dry-run", "dry run", "plan only", "只生成"]),
+        "approved_execution_requested": any(token in prompt for token in ["approved true", "--approved true", "real run", "真实运行"]),
+        "report_requested": any(token in prompt for token in ["report", "methods", "interpret"]),
+    }
+
+
+def score_candidates(prompt: str, inventory: dict[str, Any], registry: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    scores: list[dict[str, Any]] = []
+    format_counts = inventory.get("formats", {})
+    observed_formats = {key for key, count in format_counts.items() if count}
+    for skill_id, entry in registry.items():
+        if skill_id == "omics-router":
+            continue
+        keyword_hits = [token for token in entry.get("router_keywords", []) if keyword_matches(prompt, str(token).lower())]
+        input_hits = sorted(observed_formats.intersection(set(entry.get("input_formats", []))))
+        score = len(keyword_hits) * 3 + len(input_hits) * 2
+        if skill_id == "single-cell-rna-qc" and {"h5ad", "tenx_h5", "tenx_mtx"}.intersection(observed_formats):
+            score += 4
+        if skill_id == "nextflow-development" and "fastq" in observed_formats:
+            score += 4
+        if skill_id == "scvi-tools" and "h5ad" in observed_formats and any(token in prompt for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch", "latent"]):
+            score += 4
+        scores.append(
+            {
+                "skill_id": skill_id,
+                "score": score,
+                "intent_match": len(keyword_hits),
+                "input_compatibility": len(input_hits),
+                "environment_readiness": "not_checked_until_selected",
+                "approval_required": bool(entry.get("approval", {}).get("required_for_execution", False)),
+                "known_task_support": entry.get("tasks", []),
+                "matched_keywords": keyword_hits[:10],
+                "matched_input_formats": input_hits,
+            }
+        )
+    return sorted(scores, key=lambda item: (-item["score"], item["skill_id"]))
+
+
+def keyword_matches(prompt: str, keyword: str) -> bool:
+    if not keyword:
+        return False
+    if re.search(r"[^a-z0-9]", keyword):
+        return keyword in prompt
+    return re.search(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])", prompt) is not None
+
+
+def explain_selection(skill: str, candidate_scores: list[dict[str, Any]], inventory: dict[str, Any], intents: list[str]) -> str:
+    if not candidate_scores or skill == "omics-router":
+        return "No registered skill had enough intent or input evidence for a confident handoff."
+    selected = next((item for item in candidate_scores if item["skill_id"] == skill), candidate_scores[0])
+    return (
+        f"Selected {skill} from intents {', '.join(intents)} with score {selected['score']}; "
+        f"matched keywords {selected['matched_keywords']} and input formats {selected['matched_input_formats']}."
+    )
 
 
 def inspect_input(path: Path) -> dict[str, Any]:
@@ -109,9 +209,29 @@ def scvi_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
         "model": model,
         "commands": [
             "python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input {input_path} --task \"{prompt[:80]}\" --json",
             f"python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input {input_path} --output-dir {scvi_out} --model {model} --dry-run --json",
         ],
         "approved_command": f"python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input {input_path} --output-dir {scvi_out} --model {model} --approved true",
+    }
+
+
+def report_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
+    report = outdir / "report.md"
+    return {
+        "approval_required": False,
+        "commands": [
+            f"python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest {input_path} --out {report}",
+        ],
+    }
+
+
+def authoring_plan(prompt: str) -> dict[str, Any]:
+    return {
+        "approval_required": False,
+        "commands": [],
+        "guidance": "Use skill-authoring-kit for new skills, or nextflow-development nf-core adapter template for nf-core pipelines.",
+        "request": prompt,
     }
 
 

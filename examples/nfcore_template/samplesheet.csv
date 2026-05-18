@@ -1,0 +1,2 @@
+sample,fastq_1,fastq_2,metadata_column
+TEMPLATE_SAMPLE,./examples/nfcore_template/fastq/TEMPLATE_SAMPLE_R1.fastq.gz,./examples/nfcore_template/fastq/TEMPLATE_SAMPLE_R2.fastq.gz,replace_me

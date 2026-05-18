@@ -18,11 +18,56 @@ def test_skill_reference_links_exist() -> None:
     skill_paths = [
         Path("plugins/omics-analysis/skills/scvi-tools/SKILL.md"),
         Path("plugins/omics-analysis/skills/nextflow-development/SKILL.md"),
+        Path("plugins/omics-analysis/skills/omics-router/SKILL.md"),
+        Path("plugins/omics-analysis/skills/omics-report/SKILL.md"),
+        Path("plugins/omics-analysis/skills/single-cell-rna-qc/SKILL.md"),
+        Path("plugins/omics-analysis/skills/skill-authoring-kit/SKILL.md"),
     ]
     for skill_path in skill_paths:
         text = skill_path.read_text(encoding="utf-8")
         for reference in re.findall(r"`(references/[^`]+\.md)`", text):
             assert (skill_path.parent / reference).exists(), f"{skill_path}: {reference}"
+
+
+def test_skill_registry_paths_are_complete() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry, validate_registry_paths
+
+    registry = load_skill_registry()
+    assert set(registry["skills"]) == {
+        "omics-router",
+        "nextflow-development",
+        "scvi-tools",
+        "single-cell-rna-qc",
+        "omics-report",
+        "skill-authoring-kit",
+    }
+    for entry in registry["skills"].values():
+        for key in [
+            "skill_id",
+            "tasks",
+            "input_formats",
+            "constraints",
+            "scripts",
+            "schemas",
+            "outputs",
+            "approval",
+            "reporting",
+            "examples",
+            "router_keywords",
+            "workflow_diagram",
+        ]:
+            assert key in entry
+    assert validate_registry_paths(registry) == []
+
+
+def test_skill_registry_loads_without_pyyaml(monkeypatch) -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    monkeypatch.setitem(sys.modules, "yaml", None)
+    from common.registry import load_skill_registry
+
+    registry = load_skill_registry()
+    assert "nextflow-development" in registry["skills"]
 
 
 def test_migrated_alias_skills_are_removed() -> None:
@@ -34,6 +79,32 @@ def test_migrated_alias_skills_are_removed() -> None:
             text = path.read_text(encoding="utf-8")
             for alias in removed_aliases:
                 assert alias not in text, f"{path}: {alias}"
+
+
+def test_nfcore_adapter_templates_exist_and_cover_required_sections() -> None:
+    template = Path("plugins/omics-analysis/skills/nextflow-development/references/nfcore-workflow-adapter-template.md")
+    pipeline_template = Path("plugins/omics-analysis/skills/nextflow-development/references/pipelines/_template.md")
+    example_dir = Path("examples/nfcore_template")
+    assert template.exists()
+    assert pipeline_template.exists()
+    assert (example_dir / "samplesheet.csv").exists()
+    assert (example_dir / "metadata.csv").exists()
+    assert (example_dir / "omics_run_spec.yaml").exists()
+
+    template_text = template.read_text(encoding="utf-8")
+    for required in ["Official Facts To Collect", "Adapter Changes", "Safety Rules", "Test Checklist"]:
+        assert required in template_text
+    for required in ["samplesheet", "command", "router", "tests"]:
+        assert required in template_text.lower()
+
+    pipeline_text = pipeline_template.read_text(encoding="utf-8")
+    for required in ["Samplesheet", "Command Construction", "Key Outputs", "Review Points", "Troubleshooting Notes"]:
+        assert required in pipeline_text
+
+    spec_text = (example_dir / "omics_run_spec.yaml").read_text(encoding="utf-8")
+    assert "mode: template_only" in spec_text
+    assert "approved: false" in spec_text
+    assert "replace_me" in spec_text
 
 
 def test_build_and_check_plugin_package(tmp_path: Path) -> None:

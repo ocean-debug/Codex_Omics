@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Omics Router Input",
+  "type": "object",
+  "required": ["prompt", "input"],
+  "properties": {
+    "prompt": {"type": "string"},
+    "input": {"type": "string"},
+    "outdir": {"type": "string"}
+  },
+  "additionalProperties": true
+}

@@ -25,6 +25,11 @@ Codex-Omics does not bundle heavy analysis runtimes. Java 17+, Nextflow, nf-core
 - **omics-report**: render methods-ready Markdown reports from plugin-local manifests.
 - **skill-authoring-kit**: template for adding future bioinformatics skills.
 
+Skills are registered in `plugins/omics-analysis/skill_registry.yaml`. The
+router uses the registry to score user intent, input formats, constraints,
+approval rules, schemas, scripts, outputs, and workflow diagrams before
+selecting a skill.
+
 ## Safety Model
 
 Default behavior is plan-only. Long-running or environment-changing actions require explicit approval.
@@ -103,7 +108,8 @@ scvi-tools:
 ```bash
 python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/scvi-tools/scripts/list_models.py --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --dry-run --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input cells.h5ad --task "batch correction" --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --seed 0 --dry-run --json
 ```
 
 Nextflow / nf-core:
@@ -126,6 +132,10 @@ Render a report from any manifest:
 python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest results/qc/run_manifest.json --out results/qc/report.md
 ```
 
+Reports use seven sections: analysis overview, input data summary, environment
+and dependencies, methods and parameters, results and QC interpretation,
+warnings/failures/suggested fixes, and reproducibility appendix.
+
 ## Environment Requirements
 
 Base plugin scripts use Python 3.10+ and the standard library.
@@ -146,6 +156,14 @@ python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin
 The release check verifies that the plugin package contains the P0 local scripts and does not depend on the removed backend CLI.
 
 The package is intended for GitHub release distribution. It excludes `.git`, environment files, caches, virtual environments, project-local tools, analysis results, and large omics data files.
+
+## Adding nf-core Workflows
+
+To add another nf-core pipeline to `nextflow-development`, start from
+`plugins/omics-analysis/skills/nextflow-development/references/nfcore-workflow-adapter-template.md`.
+This is for extending the existing Nextflow adapter with samplesheet, command,
+router, reference, example, and test coverage. Create a new skill only when the
+workflow needs non-Nextflow logic or a separate execution model.
 
 ## Validation
 

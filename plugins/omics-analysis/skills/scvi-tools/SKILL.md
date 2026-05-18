@@ -22,9 +22,10 @@ Use plugin-local scripts only.
 ```bash
 python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/scvi-tools/scripts/list_models.py --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input cells.h5ad --task "batch correction" --json
 python plugins/omics-analysis/skills/scvi-tools/scripts/validate_adata.py --input cells.h5ad --model SCVI --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --dry-run --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --approved true
+python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --seed 0 --dry-run --json
+python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --seed 0 --approved true
 ```
 
 ## Safety
@@ -42,6 +43,7 @@ python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input c
 
 | Task | Reference |
 |---|---|
+| Workflow diagram | `references/workflow.md` |
 | AnnData count matrix and metadata checks | `references/anndata-requirements.md` |
 | Model-to-input requirements | `references/model-adapters.md` |
 | SCVI or SCANVI integration and label transfer | `references/scrna-integration.md` |

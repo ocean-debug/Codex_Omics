@@ -31,6 +31,8 @@ def test_router_generates_safe_nextflow_plan(tmp_path: Path) -> None:
     assert payload["selected_skill"] == "nextflow-development"
     assert payload["approved"] is False
     assert payload["plan"]["approval_required"] is True
+    assert payload["router_plan"]["selected_skill"] == "nextflow-development"
+    assert payload["router_plan"]["candidate_scores"][0]["skill_id"] == "nextflow-development"
 
 
 def test_router_generates_riboseq_nextflow_plan(tmp_path: Path) -> None:
@@ -56,6 +58,7 @@ def test_router_generates_riboseq_nextflow_plan(tmp_path: Path) -> None:
     payload = json.loads(completed.stdout)
     assert payload["selected_skill"] == "nextflow-development"
     assert payload["plan"]["pipeline"] == "riboseq"
+    assert payload["router_plan"]["selected_pipeline"] == "riboseq"
     assert "--revision 1.2.0" in payload["plan"]["commands"][2]
 
 
@@ -83,6 +86,7 @@ def test_router_generates_scrnaseq_nextflow_plan(tmp_path: Path) -> None:
     payload = json.loads(completed.stdout)
     assert payload["selected_skill"] == "nextflow-development"
     assert payload["plan"]["pipeline"] == "scrnaseq"
+    assert payload["router_plan"]["selected_pipeline"] == "scrnaseq"
     assert "--revision 4.1.0" in payload["plan"]["commands"][2]
 
 
@@ -109,6 +113,7 @@ def test_router_generates_spatialvi_nextflow_plan(tmp_path: Path) -> None:
     payload = json.loads(completed.stdout)
     assert payload["selected_skill"] == "nextflow-development"
     assert payload["plan"]["pipeline"] == "spatialvi"
+    assert payload["router_plan"]["selection_reason"].startswith("Selected nextflow-development")
     assert "--metadata" in payload["plan"]["commands"][1]
     assert "--revision dev" in payload["plan"]["commands"][2]
 
@@ -143,8 +148,50 @@ def test_report_renderer_from_manifest(tmp_path: Path) -> None:
     )
     assert completed.returncode == 0, completed.stderr
     text = report.read_text(encoding="utf-8")
+    for section in [
+        "## Analysis Overview",
+        "## Input Data Summary",
+        "## Environment and Dependencies",
+        "## Methods and Parameters",
+        "## Results and QC Interpretation",
+        "## Warnings / Failures / Suggested Fixes",
+        "## Reproducibility Appendix",
+    ]:
+        assert section in text
     assert "Cells before filtering" in text
     assert "Removed cells" in text
+
+
+def test_scvi_recommend_model_from_task_without_anndata(tmp_path: Path) -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py",
+            "--input",
+            str(tmp_path / "missing.h5ad"),
+            "--task",
+            "CITE-seq protein ADT analysis",
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["recommended_model"] == "TOTALVI"
+    assert payload["ranked_recommendations"][0]["model"] == "TOTALVI"
+    assert payload["anndata_summary"]["readable"] is False
+
+
+def test_lightweight_schema_validation_reports_missing_key() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.schema_validation import lightweight_validate
+
+    result = lightweight_validate({"status": "planned"}, {"required": ["status", "selected_skill"], "properties": {"status": {"type": "string"}}})
+    assert result["mode"] == "lightweight"
+    assert result["valid"] is False
+    assert "Missing required key: selected_skill" in result["errors"]
 
 
 def test_install_planner_is_plan_only_by_default(tmp_path: Path) -> None:

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nextflow Development Input",
+  "type": "object",
+  "required": ["pipeline", "input"],
+  "properties": {
+    "pipeline": {"type": "string"},
+    "input": {"type": "string"},
+    "metadata": {"type": "string"},
+    "fasta": {"type": "string"},
+    "gtf": {"type": "string"}
+  },
+  "additionalProperties": true
+}

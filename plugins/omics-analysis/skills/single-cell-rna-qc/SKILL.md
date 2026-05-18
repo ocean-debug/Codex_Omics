@@ -45,3 +45,9 @@ Use plugin-local scripts only.
 
 - Read `references/qc-metrics.md` when explaining metrics or gene patterns.
 - Read `references/filtering-policy.md` when tuning thresholds.
+
+| Task | Reference |
+|---|---|
+| Workflow diagram | `references/workflow.md` |
+| QC metrics and gene patterns | `references/qc-metrics.md` |
+| Filtering thresholds and policy | `references/filtering-policy.md` |

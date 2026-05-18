@@ -7,6 +7,11 @@ description: Create new Codex-Omics plugin-local analysis skills with SKILL.md, 
 
 Create plugin-local skills. Do not add a backend CLI command.
 
+If the work is only adding another nf-core pipeline to the existing
+`nextflow-development` skill, use
+`plugins/omics-analysis/skills/nextflow-development/references/nfcore-workflow-adapter-template.md`
+instead of creating a new skill.
+
 ## Required structure
 
 ```text
@@ -37,3 +42,10 @@ scripts/summarize.py
 ```
 
 Read `references/new-skill-template.md` for the detailed template.
+
+## References
+
+| Task | Reference |
+|---|---|
+| Authoring workflow diagram | `references/workflow.md` |
+| New skill template | `references/new-skill-template.md` |

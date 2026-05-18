@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Omics Router Run",
+  "type": "object",
+  "required": ["status", "selected_skill", "router_plan"],
+  "properties": {
+    "status": {"type": "string"},
+    "selected_skill": {"type": "string"},
+    "router_plan": {"type": "object"}
+  },
+  "additionalProperties": true
+}

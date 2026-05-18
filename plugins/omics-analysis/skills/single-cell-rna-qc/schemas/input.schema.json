@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Single-cell RNA QC Input",
+  "type": "object",
+  "required": ["input"],
+  "properties": {
+    "input": {"type": "string"},
+    "output_dir": {"type": "string"},
+    "min_genes": {"type": "integer"},
+    "max_mito_pct": {"type": "number"}
+  },
+  "additionalProperties": true
+}
