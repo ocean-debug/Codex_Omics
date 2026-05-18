@@ -5,6 +5,7 @@ Before release:
 ```bash
 python -m compileall -q plugins scripts tests
 python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --help
+python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --help
 python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --help
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --help
 python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --help
@@ -20,3 +21,5 @@ Confirm:
 - Plugin package does not include private paths, caches, tools, results, virtual environments, or large data.
 - P0 scripts support `--help`, `--json`, `--dry-run`, `--approved`, and `--write-manifest`.
 - Long-running execution requires explicit approval.
+- Registry entries reference existing scripts, schemas, examples, router keywords, and workflow diagrams.
+- Reports render the seven required sections and preserve errors, warnings, commands, interpretation, and suggested fixes.

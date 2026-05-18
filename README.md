@@ -1,197 +1,171 @@
 # Codex-Omics
 
-Codex-Omics is a Codex plugin for omics analysis. It provides self-contained, plugin-local skills for single-cell RNA-seq QC, scvi-tools workflows, and Nextflow/nf-core workflow development.
+Codex-Omics is a Codex plugin for reproducible omics analysis. It provides
+plugin-local skills for single-cell QC, scvi-tools workflows, nf-core/Nextflow
+planning, routing, reporting, and skill authoring.
 
-The plugin is the product. Users load `plugins/omics-analysis/` in Codex, and Codex uses the bundled `SKILL.md` files plus plugin-local scripts. There is no backend CLI requirement.
-
-## Install as a Codex Plugin
-
-Use the repository plugin directory during development:
-
-```text
-plugins/omics-analysis/
-```
-
-For release use, download or build `dist/codex-omics-plugin-v1.0.0.zip`, extract it, and load the extracted `omics-analysis/` plugin directory in Codex or another compatible agent.
-
-Codex-Omics does not bundle heavy analysis runtimes. Java 17+, Nextflow, nf-core, Singularity/Apptainer or Docker, scverse, scvi-tools, and GPU PyTorch are provided by the user's environment. The plugin checks those dependencies, writes a plan, and executes long-running work only after explicit approval.
+The plugin is the product: load `plugins/omics-analysis/` in Codex and use the
+bundled `SKILL.md` files plus local scripts. There is no backend CLI
+requirement.
 
 ## What It Provides
 
-- **single-cell-rna-qc**: inspect `.h5ad`, 10x H5, or 10x MTX inputs; check scverse dependencies; plan or run QC; write filtered AnnData, plots, manifest, and report.
-- **scvi-tools**: check scvi-tools, torch, CUDA/GPU state, and AnnData readiness; list available models; validate inputs; train only after approval.
-- **nextflow-development**: check Java, Nextflow, nf-core, git, and container backends; detect FASTQ/spatial inputs; generate samplesheets for rnaseq, scrnaseq, riboseq, spatialvi, atacseq, and sarek; build dry-run commands; execute only after approval.
-- **omics-router**: inspect input data plus user intent, choose the right skill, and write a safe plan with `approved: false`.
-- **omics-report**: render methods-ready Markdown reports from plugin-local manifests.
-- **skill-authoring-kit**: template for adding future bioinformatics skills.
+| Skill | Use for |
+|---|---|
+| `omics-router` | Choose the right skill from user intent, input inventory, constraints, and registered capabilities. |
+| `single-cell-rna-qc` | Validate `.h5ad` or 10x inputs, plan/run QC, write filtered AnnData, plots, manifest, and report. |
+| `scvi-tools` | Recommend SCVI/SCANVI/TOTALVI/PEAKVI/MULTIVI, validate AnnData, plan/train approved models, record diagnostics. |
+| `nextflow-development` | Generate nf-core samplesheets, build `command.sh` and `params.yaml`, parse MultiQC, run only after approval. |
+| `omics-report` | Render seven-section Markdown reports from run manifests. |
+| `skill-authoring-kit` | Add new plugin-local bioinformatics skills or extend existing adapters. |
 
-Skills are registered in `plugins/omics-analysis/skill_registry.yaml`. The
-router uses the registry to score user intent, input formats, constraints,
-approval rules, schemas, scripts, outputs, and workflow diagrams before
-selecting a skill.
-
-## Safety Model
-
-Default behavior is plan-only. Long-running or environment-changing actions require explicit approval.
-
-Requires approval:
-
-- real Nextflow execution;
-- scvi-tools training;
-- GPU training;
-- heavy dependency installation;
-- large downloads;
-- destructive overwrite;
-- data movement outside user-controlled output directories.
-
-The plugin diagnoses missing tools and suggests environment-specific install commands. It does not silently install scvi-tools, GPU PyTorch, Java, Nextflow, nf-core, Singularity, Apptainer, or Docker.
-
-When the user explicitly wants help installing dependencies, generate a plan first:
-
-```bash
-python plugins/omics-analysis/scripts/common/install_planner.py --task scvi --output-dir results/install_scvi --json
-python plugins/omics-analysis/scripts/common/install_planner.py --task nfcore --output-dir results/install_nfcore --json
-```
-
-## Plugin Layout
-
-```text
-plugins/omics-analysis/
-  .codex-plugin/plugin.json
-  skills/
-    single-cell-rna-qc/
-    scvi-tools/
-    nextflow-development/
-    omics-router/
-    omics-report/
-    skill-authoring-kit/
-  scripts/common/
-  schemas/
-```
-
-Each P0 skill has:
-
-```text
-SKILL.md
-scripts/
-references/
-schemas/
-examples/
-```
+Skills are registered in `plugins/omics-analysis/skill_registry.yaml`, so the
+router and release checks can discover scripts, schemas, outputs, approval
+rules, examples, and workflow diagrams.
 
 ## Quick Start
 
-Load this plugin directory in Codex:
+Use the plugin directory directly during development:
 
 ```text
 plugins/omics-analysis/
 ```
 
-Then use the selected skill's local scripts.
-
-Route from a prompt and input directory:
-
-```bash
-python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --prompt "run rnaseq workflow" --input data --outdir results/route --json
-```
-
-Single-cell RNA-seq QC:
-
-```bash
-python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/check_environment.py --json
-python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --dry-run --json
-python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input cells.h5ad --output-dir results/qc --approved true --write-manifest
-```
-
-scvi-tools:
-
-```bash
-python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/list_models.py --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --input cells.h5ad --task "batch correction" --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --input cells.h5ad --output-dir results/scvi --model SCVI --seed 0 --dry-run --json
-```
-
-Nextflow / nf-core:
-
-```bash
-python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
-python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline rnaseq --input fastq_dir --out samplesheet.csv
-python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --dry-run --json
-python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline scrnaseq --input fastq_dir --out scrnaseq_samplesheet.csv --metadata metadata.csv
-python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline scrnaseq --input scrnaseq_samplesheet.csv --outdir results/scrnaseq --profile singularity --aligner cellranger --protocol 10x --dry-run --json
-python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline riboseq --input fastq_dir --out riboseq_samplesheet.csv --sample-type riboseq
-python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline riboseq --revision 1.2.0 --input riboseq_samplesheet.csv --outdir results/riboseq --profile singularity --fasta genome.fa --gtf genes.gtf --dry-run --json
-python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline spatialvi --input spatial_dir --out spatialvi_samplesheet.csv --metadata metadata.csv --spatial-mode auto
-python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline spatialvi --input spatialvi_samplesheet.csv --outdir results/spatialvi --profile singularity --spaceranger-reference /refs/spaceranger --dry-run --json
-```
-
-Render a report from any manifest:
-
-```bash
-python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --manifest results/qc/run_manifest.json --out results/qc/report.md
-```
-
-Reports use seven sections: analysis overview, input data summary, environment
-and dependencies, methods and parameters, results and QC interpretation,
-warnings/failures/suggested fixes, and reproducibility appendix.
-
-## Environment Requirements
-
-Base plugin scripts use Python 3.10+ and the standard library.
-
-Analysis-specific dependencies are checked per skill:
-
-- scRNA QC: `scanpy`, `anndata`, `numpy`, `scipy`, `pandas`, `matplotlib`, `seaborn`
-- scVI: `scvi-tools`, `torch`, `scanpy`, `anndata`
-- Nextflow: Java 17+, Nextflow, nf-core, git, Singularity/Apptainer or Docker
-
-## Build Plugin Package
+For release use, build or download the zip package, extract it, and load the
+extracted `omics-analysis/` plugin directory:
 
 ```bash
 python scripts/release/build_plugin_package.py
 python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin-v1.0.0.zip
 ```
 
-The release check verifies that the plugin package contains the P0 local scripts and does not depend on the removed backend CLI.
+Route a request:
 
-The package is intended for GitHub release distribution. It excludes `.git`, environment files, caches, virtual environments, project-local tools, analysis results, and large omics data files.
+```bash
+python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py \
+  --prompt "run rnaseq workflow" \
+  --input data \
+  --outdir results/route \
+  --json
+```
 
-## Adding nf-core Workflows
+Run skill scripts in the same pattern:
 
-To add another nf-core pipeline to `nextflow-development`, start from
-`plugins/omics-analysis/skills/nextflow-development/references/nfcore-workflow-adapter-template.md`.
-This is for extending the existing Nextflow adapter with samplesheet, command,
-router, reference, example, and test coverage. Create a new skill only when the
-workflow needs non-Nextflow logic or a separate execution model.
+```bash
+# Plan single-cell QC
+python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py \
+  --input cells.h5ad \
+  --output-dir results/qc \
+  --dry-run \
+  --json
+
+# Recommend an scvi-tools model
+python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py \
+  --input cells.h5ad \
+  --task "batch correction" \
+  --json
+
+# Build an nf-core command without executing it
+python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py \
+  --pipeline rnaseq \
+  --input samplesheet.csv \
+  --outdir results/rnaseq \
+  --profile singularity \
+  --dry-run \
+  --json
+```
+
+Long-running execution remains explicit:
+
+```bash
+python plugins/omics-analysis/skills/nextflow-development/scripts/run_nextflow.py \
+  --config nfcore_run.yaml \
+  --approved true
+```
+
+## Supported nf-core Adapters
+
+`nextflow-development` currently includes lightweight adapters for:
+
+- `nf-core/rnaseq`
+- `nf-core/scrnaseq`
+- `nf-core/riboseq`
+- `nf-core/spatialvi`
+- `nf-core/atacseq`
+- `nf-core/sarek`
+
+To add another nf-core workflow, start from:
+
+```text
+plugins/omics-analysis/skills/nextflow-development/references/nfcore-workflow-adapter-template.md
+```
+
+## Safety Model
+
+Codex-Omics is plan-first.
+
+- Dry-run or planned mode is the default.
+- Real Nextflow execution, scvi training, heavy downloads, dependency
+  installation, and destructive actions require explicit approval.
+- Scripts write `run_manifest.json` and `report.md` when they plan or execute a
+  workflow.
+- The plugin does not silently install Java, Nextflow, nf-core, container
+  runtimes, scverse, scvi-tools, GPU PyTorch, or reference data.
+
+## Requirements
+
+Base plugin scripts use Python 3.10+ and the standard library.
+
+Analysis runtimes are provided by the user environment and checked per skill:
+
+| Area | Typical requirements |
+|---|---|
+| single-cell QC | `scanpy`, `anndata`, `numpy`, `scipy`, `pandas`, plotting libraries |
+| scvi-tools | `scvi-tools`, `torch`, `scanpy`, `anndata`, optional GPU |
+| Nextflow/nf-core | Java 17+, Nextflow, nf-core, git, Singularity/Apptainer or Docker |
 
 ## Validation
 
-Plugin-local smoke checks:
+Local release checks:
 
 ```bash
-python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/check_environment.py --json
-python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --help
-python plugins/omics-analysis/skills/scvi-tools/scripts/check_environment.py --json
-python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --help
-python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
-python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --help
-python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --help
-python plugins/omics-analysis/skills/omics-report/scripts/render_report.py --help
-python plugins/omics-analysis/scripts/common/install_planner.py --help
+python -m compileall -q plugins scripts tests
+python scripts/release/build_plugin_package.py
+python scripts/release/check_release.py --plugin-package dist/codex-omics-plugin-v1.0.0.zip
 ```
 
-Run tests when `pytest` is available:
+Remote validation on `gpu03` completed on 2026-05-18:
 
-```bash
-python -m pytest tests -q
+```text
+result: /home/hywang/codex/codex_omics/data/test/result/registry_router_validation_20260518/
+pytest: 43 passed in 36.59s
+overall_status: ok
+```
+
+See `docs/acceptance-matrix.md` and `docs/remote-validation.md` for details.
+
+## Repository Layout
+
+```text
+plugins/omics-analysis/
+  .codex-plugin/plugin.json
+  skill_registry.yaml
+  skills/
+  scripts/common/
+  schemas/
+docs/
+tests/
+scripts/release/
 ```
 
 ## Scope
 
-Codex-Omics is a plugin-local omics skill collection. It helps Codex plan, validate, and run approved omics workflows, but it does not guarantee every dataset, pipeline, HPC environment, network, container cache, or GPU stack will work without preparation.
+Codex-Omics helps Codex plan, validate, report, and run approved omics
+workflows. It does not guarantee that every dataset, HPC profile, network,
+container registry, reference genome, or GPU stack will work without
+environment preparation.
 
-The v1.0.0 release candidate has completed plugin packaging checks, script help checks, scvi-tools validation/training acceptance, and an nf-core/rnaseq run through completion on a user-managed server. Marketplace publication is outside this repository's release checks.
+Marketplace publication is outside the repository release checks.
 
 ## License
 
