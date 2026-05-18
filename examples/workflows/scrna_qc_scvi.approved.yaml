@@ -55,7 +55,7 @@ workflow:
           name: workflow_scvi
           description: Train SCVI on QC-filtered synthetic data.
           type: scvi_model
-          skill: scvi-universal
+          skill: scvi-tools
         inputs:
           path: ""
           type: h5ad

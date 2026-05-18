@@ -43,13 +43,13 @@ def route_request(prompt: str, input_path: Path, outdir: Path) -> dict[str, Any]
         skill = "single-cell-rna-qc"
         env = inspect_scrna_qc_environment()
         plan = scrna_qc_plan(input_path, outdir)
-    elif inventory["formats"].get("fastq") or any(token in prompt_l for token in ["rnaseq", "atacseq", "sarek", "fastq", "nextflow", "nf-core"]):
+    elif inventory["formats"].get("fastq") or any(token in prompt_l for token in ["rnaseq", "scrnaseq", "single-cell fastq", "cellranger", "cell ranger", "simpleaf", "star-solo", "starsolo", "kallisto", "10x", "atacseq", "sarek", "riboseq", "ribo-seq", "ribosome profiling", "translational efficiency", "tiseq", "spatialvi", "spatial transcriptomics", "visium", "spaceranger", "space ranger", "fastq", "nextflow", "nf-core"]):
         skill = "nextflow-development"
         env = inspect_nextflow_environment()
         plan = nextflow_plan(input_path, outdir, prompt_l)
     else:
         skill = "omics-router"
-        env = {"status": "warning", "blockers": [], "warnings": [{"warning_type": "AmbiguousInput", "message": "No omics workflow could be selected confidently.", "suggested_fix": "Provide a prompt mentioning QC, scVI, rnaseq, atacseq, sarek, FASTQ, h5ad, or 10x."}]}
+        env = {"status": "warning", "blockers": [], "warnings": [{"warning_type": "AmbiguousInput", "message": "No omics workflow could be selected confidently.", "suggested_fix": "Provide a prompt mentioning QC, scVI, rnaseq, scrnaseq, riboseq, spatialvi, atacseq, sarek, FASTQ, h5ad, Visium, or 10x."}]}
         plan = {"approval_required": False, "commands": []}
     return {
         "status": "planned",
@@ -116,16 +116,30 @@ def scvi_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
 
 
 def nextflow_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
-    pipeline = "atacseq" if "atac" in prompt else "sarek" if "sarek" in prompt else "rnaseq"
+    pipeline = (
+        "spatialvi"
+        if any(token in prompt for token in ["spatialvi", "spatial transcriptomics", "visium", "spaceranger", "space ranger"])
+        else "scrnaseq"
+        if any(token in prompt for token in ["scrnaseq", "single-cell fastq", "cellranger", "cell ranger", "simpleaf", "star-solo", "starsolo", "kallisto", "10x"])
+        else "riboseq"
+        if any(token in prompt for token in ["riboseq", "ribo-seq", "ribosome profiling", "translational efficiency", "tiseq"])
+        else "atacseq"
+        if "atac" in prompt
+        else "sarek"
+        if "sarek" in prompt
+        else "rnaseq"
+    )
     nf_out = outdir / pipeline
     sheet = nf_out / "samplesheet.csv"
+    revision = " --revision 1.2.0" if pipeline == "riboseq" else " --revision 4.1.0" if pipeline == "scrnaseq" else " --revision dev" if pipeline == "spatialvi" else ""
+    metadata = f" --metadata {input_path / 'metadata.csv'}" if pipeline == "spatialvi" else ""
     return {
         "approval_required": True,
         "pipeline": pipeline,
         "commands": [
             "python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json",
-            f"python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline {pipeline} --input {input_path} --out {sheet}",
-            f"python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline {pipeline} --input {sheet} --outdir {nf_out} --profile singularity --dry-run --json",
+            f"python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline {pipeline} --input {input_path} --out {sheet}{metadata}",
+            f"python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline {pipeline} --input {sheet} --outdir {nf_out} --profile singularity{revision} --dry-run --json",
         ],
     }
 

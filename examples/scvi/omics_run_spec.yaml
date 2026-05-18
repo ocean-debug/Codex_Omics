@@ -2,7 +2,7 @@ run:
   name: scvi_demo
   description: Validate and train a small SCVI model.
   type: scvi_model
-  skill: scvi-universal
+  skill: scvi-tools
 inputs:
   path: ./examples/scvi/synthetic.h5ad
   type: h5ad

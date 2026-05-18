@@ -25,6 +25,17 @@ def test_skill_reference_links_exist() -> None:
             assert (skill_path.parent / reference).exists(), f"{skill_path}: {reference}"
 
 
+def test_migrated_alias_skills_are_removed() -> None:
+    removed_aliases = ["nf-core-universal", "scvi-universal"]
+    for alias in removed_aliases:
+        assert not (Path("plugins/omics-analysis/skills") / alias).exists()
+    for path in [*Path("examples").rglob("*"), *Path("plugins/omics-analysis").rglob("*")]:
+        if path.is_file() and path.suffix in {".md", ".py", ".json", ".yaml", ".yml"}:
+            text = path.read_text(encoding="utf-8")
+            for alias in removed_aliases:
+                assert alias not in text, f"{path}: {alias}"
+
+
 def test_build_and_check_plugin_package(tmp_path: Path) -> None:
     completed = subprocess.run(
         [sys.executable, "scripts/release/build_plugin_package.py", "--outdir", str(tmp_path)],

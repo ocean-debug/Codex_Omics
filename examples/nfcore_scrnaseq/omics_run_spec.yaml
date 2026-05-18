@@ -1,0 +1,30 @@
+run:
+  name: nfcore_scrnaseq_command_demo
+  description: Build an nf-core/scrnaseq 4.1.0 command without executing the workflow.
+  type: nfcore_pipeline
+  skill: nextflow-development
+inputs:
+  path: ./examples/nfcore_scrnaseq/fastq
+  type: fastq_directory
+  species: human
+nfcore:
+  pipeline: scrnaseq
+  version: 4.1.0
+  params:
+    input: ./examples/nfcore_scrnaseq/samplesheet.csv
+    outdir: ./results/nfcore_scrnaseq
+    aligner: cellranger
+    protocol: 10x
+    genome: GRCh38
+  samplesheet:
+    path: ./examples/nfcore_scrnaseq/samplesheet.csv
+  metadata:
+    path: ./examples/nfcore_scrnaseq/metadata.csv
+execution:
+  mode: command_only
+  approved: false
+  profile: singularity
+outputs:
+  outdir: ./results/nfcore_scrnaseq
+  report: ./results/nfcore_scrnaseq/report.md
+  manifest: ./results/nfcore_scrnaseq/run_manifest.json

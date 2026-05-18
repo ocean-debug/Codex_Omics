@@ -20,7 +20,7 @@ Codex-Omics does not bundle heavy analysis runtimes. Java 17+, Nextflow, nf-core
 
 - **single-cell-rna-qc**: inspect `.h5ad`, 10x H5, or 10x MTX inputs; check scverse dependencies; plan or run QC; write filtered AnnData, plots, manifest, and report.
 - **scvi-tools**: check scvi-tools, torch, CUDA/GPU state, and AnnData readiness; list available models; validate inputs; train only after approval.
-- **nextflow-development**: check Java, Nextflow, nf-core, git, and container backends; detect FASTQ inputs; generate samplesheets; build dry-run commands; execute only after approval.
+- **nextflow-development**: check Java, Nextflow, nf-core, git, and container backends; detect FASTQ/spatial inputs; generate samplesheets for rnaseq, scrnaseq, riboseq, spatialvi, atacseq, and sarek; build dry-run commands; execute only after approval.
 - **omics-router**: inspect input data plus user intent, choose the right skill, and write a safe plan with `approved: false`.
 - **omics-report**: render methods-ready Markdown reports from plugin-local manifests.
 - **skill-authoring-kit**: template for adding future bioinformatics skills.
@@ -112,6 +112,12 @@ Nextflow / nf-core:
 python plugins/omics-analysis/skills/nextflow-development/scripts/check_environment.py --json
 python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline rnaseq --input fastq_dir --out samplesheet.csv
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline rnaseq --input samplesheet.csv --outdir results/rnaseq --profile singularity --dry-run --json
+python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline scrnaseq --input fastq_dir --out scrnaseq_samplesheet.csv --metadata metadata.csv
+python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline scrnaseq --input scrnaseq_samplesheet.csv --outdir results/scrnaseq --profile singularity --aligner cellranger --protocol 10x --dry-run --json
+python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline riboseq --input fastq_dir --out riboseq_samplesheet.csv --sample-type riboseq
+python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline riboseq --revision 1.2.0 --input riboseq_samplesheet.csv --outdir results/riboseq --profile singularity --fasta genome.fa --gtf genes.gtf --dry-run --json
+python plugins/omics-analysis/skills/nextflow-development/scripts/generate_samplesheet.py --pipeline spatialvi --input spatial_dir --out spatialvi_samplesheet.csv --metadata metadata.csv --spatial-mode auto
+python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --pipeline spatialvi --input spatialvi_samplesheet.csv --outdir results/spatialvi --profile singularity --spaceranger-reference /refs/spaceranger --dry-run --json
 ```
 
 Render a report from any manifest:

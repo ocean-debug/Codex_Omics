@@ -1,0 +1,5 @@
+sample,type,treatment,pair,sample_description
+RIBO_CONTROL,riboseq,control,control_1,Ribo-seq control
+RNA_CONTROL,rnaseq,control,control_1,RNA-seq control
+RIBO_TREATED,riboseq,treated,treated_1,Ribo-seq treated
+RNA_TREATED,rnaseq,treated,treated_1,RNA-seq treated

@@ -24,6 +24,16 @@ def classify_failure(text: str) -> dict[str, str]:
     lowered = text.lower()
     if "github.com" in lowered and any(token in lowered for token in ["connection failed", "timed out", "could not resolve", "unable to access"]):
         return {"error_type": "PipelinePullFailed", "message": "Nextflow could not pull the nf-core pipeline.", "suggested_fix": "Pre-cache the pipeline with `nextflow pull nf-core/<pipeline>` and rerun with -resume."}
+    if "ribotish" in lowered and (
+        "wrong cds annotation" in lowered
+        or "cds_region_trans" in lowered
+        or "nonetype" in lowered and "int" in lowered
+    ):
+        return {
+            "error_type": "RiboTishAnnotationIncompatibility",
+            "message": "Ribo-TISH failed while parsing CDS annotation records.",
+            "suggested_fix": "Use `--skip_ribotish true` for a QC/quantification-focused run, or clean/replace the GTF before rerunning Ribo-TISH with -resume.",
+        }
     if "failed to find the gene identifier attribute" in lowered or "featurecounts_group_type" in lowered:
         return {
             "error_type": "InvalidAnnotationAttributes",
@@ -36,7 +46,16 @@ def classify_failure(text: str) -> dict[str, str]:
             "message": "A Singularity/Apptainer container download exceeded the configured Nextflow pull timeout.",
             "suggested_fix": "Pre-cache the image or increase `singularity.pullTimeout` / `apptainer.pullTimeout`, then rerun with -resume.",
         }
-    if "container" in lowered and any(token in lowered for token in ["pull", "timeout", "failed"]):
+    container_failure_tokens = [
+        "failed to pull singularity image",
+        "failed to pull apptainer image",
+        "failed to create container",
+        "could not pull",
+        "error pulling image",
+        "singularity image pull failed",
+        "apptainer pull failed",
+    ]
+    if any(token in lowered for token in container_failure_tokens):
         return {"error_type": "ContainerPullFailed", "message": "A container image could not be pulled or prepared.", "suggested_fix": "Check Singularity/Apptainer cache and network access, then rerun with -resume."}
     if "java" in lowered:
         return {"error_type": "UnsupportedRuntime", "message": "Nextflow reported a Java runtime problem.", "suggested_fix": "Use Java 17+."}
@@ -93,7 +112,10 @@ def main() -> int:
         if status == "failed":
             stderr = Path(result["stderr"]).read_text(encoding="utf-8", errors="replace")
             stdout = Path(result["stdout"]).read_text(encoding="utf-8", errors="replace")
-            errors.append(classify_failure(stdout + "\n" + stderr))
+            failure_text = stdout + "\n" + stderr
+            if Path(".nextflow.log").exists():
+                failure_text += "\n" + Path(".nextflow.log").read_text(encoding="utf-8", errors="replace")
+            errors.append(classify_failure(failure_text))
         if Path(".nextflow.log").exists():
             shutil.copyfile(".nextflow.log", outdir / ".nextflow.log")
             execution["nextflow_log"] = str(outdir / ".nextflow.log")

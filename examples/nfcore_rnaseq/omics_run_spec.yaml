@@ -2,7 +2,7 @@ run:
   name: nfcore_rnaseq_command_demo
   description: Build an nf-core/rnaseq command without executing the workflow.
   type: nfcore_pipeline
-  skill: nf-core-universal
+  skill: nextflow-development
 inputs:
   path: ./examples/nfcore_rnaseq/fastq
   type: fastq_directory

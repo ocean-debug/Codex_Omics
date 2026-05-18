@@ -25,6 +25,9 @@ Symptoms:
 Actions:
 
 - Rebuild the command with `--pull-timeout "4 h"` when the network is slow.
+- Add `--singularity-pull-docker-container` to make nf-core modules use their
+  Docker/OCI container names instead of `depot.galaxyproject.org` Singularity
+  URLs when `task.ext.singularity_pull_docker_container` is implemented.
 - Add `--overwrite-reports` if report, timeline, trace, or DAG files already
   exist.
 - Use `--resume` to continue from the existing work directory.

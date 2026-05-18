@@ -1,0 +1,5 @@
+sample,fastq_1,fastq_2,strandedness,type,treatment,pair,sample_description
+RIBO_CONTROL,./examples/nfcore_riboseq/fastq/RIBO_CONTROL_R1.fastq.gz,,auto,riboseq,control,control_1,Ribo-seq control
+RNA_CONTROL,./examples/nfcore_riboseq/fastq/RNA_CONTROL_R1.fastq.gz,./examples/nfcore_riboseq/fastq/RNA_CONTROL_R2.fastq.gz,auto,rnaseq,control,control_1,RNA-seq control
+RIBO_TREATED,./examples/nfcore_riboseq/fastq/RIBO_TREATED_R1.fastq.gz,,auto,riboseq,treated,treated_1,Ribo-seq treated
+RNA_TREATED,./examples/nfcore_riboseq/fastq/RNA_TREATED_R1.fastq.gz,./examples/nfcore_riboseq/fastq/RNA_TREATED_R2.fastq.gz,auto,rnaseq,treated,treated_1,RNA-seq treated

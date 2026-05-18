@@ -14,7 +14,7 @@ def detect(path: Path) -> dict[str, object]:
         "fastq_count": len(fastqs),
         "reference_count": len(references),
         "candidate_data_type": "fastq" if fastqs else "unknown",
-        "candidate_workflows": ["rnaseq", "atacseq", "sarek"] if fastqs else [],
+        "candidate_workflows": ["rnaseq", "scrnaseq", "atacseq", "sarek", "riboseq", "spatialvi"] if fastqs else [],
     }
 
 

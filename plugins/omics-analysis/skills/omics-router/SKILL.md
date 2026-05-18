@@ -17,7 +17,7 @@ python plugins/omics-analysis/skills/omics-router/scripts/route_omics.py --promp
 
 - h5ad/10x, QC, mitochondrial filtering -> `single-cell-rna-qc`
 - scVI, scANVI, totalVI, latent embeddings, batch correction -> `scvi-tools`
-- FASTQ, nf-core, Nextflow, rnaseq, atacseq, sarek -> `nextflow-development`
+- FASTQ, nf-core, Nextflow, rnaseq, scrnaseq, riboseq, spatialvi, Visium, atacseq, sarek -> `nextflow-development`
 - manifest/report summarization -> `omics-report`
 - adding a new reusable omics workflow -> `skill-authoring-kit`
 

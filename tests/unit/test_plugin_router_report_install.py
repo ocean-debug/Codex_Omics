@@ -33,6 +33,86 @@ def test_router_generates_safe_nextflow_plan(tmp_path: Path) -> None:
     assert payload["plan"]["approval_required"] is True
 
 
+def test_router_generates_riboseq_nextflow_plan(tmp_path: Path) -> None:
+    (tmp_path / "sample_R1.fastq.gz").write_text("", encoding="utf-8")
+    outdir = tmp_path / "route"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "run riboseq translational efficiency",
+            "--input",
+            str(tmp_path),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "nextflow-development"
+    assert payload["plan"]["pipeline"] == "riboseq"
+    assert "--revision 1.2.0" in payload["plan"]["commands"][2]
+
+
+def test_router_generates_scrnaseq_nextflow_plan(tmp_path: Path) -> None:
+    (tmp_path / "sample_R1.fastq.gz").write_text("", encoding="utf-8")
+    (tmp_path / "sample_R2.fastq.gz").write_text("", encoding="utf-8")
+    outdir = tmp_path / "route"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "run scrnaseq with cellranger",
+            "--input",
+            str(tmp_path),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "nextflow-development"
+    assert payload["plan"]["pipeline"] == "scrnaseq"
+    assert "--revision 4.1.0" in payload["plan"]["commands"][2]
+
+
+def test_router_generates_spatialvi_nextflow_plan(tmp_path: Path) -> None:
+    (tmp_path / "metadata.csv").write_text("sample,spaceranger_dir\nvisium1,/outs\n", encoding="utf-8")
+    outdir = tmp_path / "route"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "run spatialvi for visium spaceranger data",
+            "--input",
+            str(tmp_path),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "nextflow-development"
+    assert payload["plan"]["pipeline"] == "spatialvi"
+    assert "--metadata" in payload["plan"]["commands"][1]
+    assert "--revision dev" in payload["plan"]["commands"][2]
+
+
 def test_report_renderer_from_manifest(tmp_path: Path) -> None:
     manifest = tmp_path / "run_manifest.json"
     manifest.write_text(

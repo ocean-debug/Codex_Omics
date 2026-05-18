@@ -1,0 +1,2 @@
+sample,fastq_dir,image,slide,area,manual_alignment,slidefile
+VISIUM_RAW,./examples/nfcore_spatialvi/fastq,./examples/nfcore_spatialvi/images/tissue.jpg,V19A01,A1,false,

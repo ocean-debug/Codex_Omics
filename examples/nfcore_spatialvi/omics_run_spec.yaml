@@ -1,0 +1,29 @@
+run:
+  name: nfcore_spatialvi_command_demo
+  description: Build nf-core/spatialvi dev commands without executing the workflow.
+  type: nfcore_pipeline
+  skill: nextflow-development
+inputs:
+  path: ./examples/nfcore_spatialvi
+  type: spatial_transcriptomics_directory
+  species: human
+nfcore:
+  pipeline: spatialvi
+  version: dev
+  raw:
+    samplesheet: ./examples/nfcore_spatialvi/samplesheet_raw.csv
+    metadata: ./examples/nfcore_spatialvi/metadata_raw.csv
+    outdir: ./results/nfcore_spatialvi_raw
+    spaceranger_reference: ./references/spaceranger
+  processed:
+    samplesheet: ./examples/nfcore_spatialvi/samplesheet_processed.csv
+    metadata: ./examples/nfcore_spatialvi/metadata_processed.csv
+    outdir: ./results/nfcore_spatialvi_processed
+execution:
+  mode: command_only
+  approved: false
+  profile: singularity
+outputs:
+  outdir: ./results/nfcore_spatialvi
+  report: ./results/nfcore_spatialvi/report.md
+  manifest: ./results/nfcore_spatialvi/run_manifest.json

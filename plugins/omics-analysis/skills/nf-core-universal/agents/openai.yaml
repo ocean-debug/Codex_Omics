@@ -1,4 +1,0 @@
-interface:
-  display_name: "nf-core Universal"
-  short_description: "Plan and run nf-core pipelines safely."
-  default_prompt: "Prepare an nf-core run spec."

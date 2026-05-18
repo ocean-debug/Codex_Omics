@@ -1,0 +1,32 @@
+run:
+  name: nfcore_riboseq_command_demo
+  description: Build an nf-core/riboseq 1.2.0 command without executing the workflow.
+  type: nfcore_pipeline
+  skill: nextflow-development
+inputs:
+  path: ./examples/nfcore_riboseq/fastq
+  type: fastq_directory
+  species: human
+nfcore:
+  pipeline: riboseq
+  version: 1.2.0
+  params:
+    input: ./examples/nfcore_riboseq/samplesheet.csv
+    outdir: ./results/nfcore_riboseq
+    fasta: ./references/genome.fa
+    gtf: ./references/genes.gtf
+    contrasts: ./examples/nfcore_riboseq/contrasts.csv
+  samplesheet:
+    path: ./examples/nfcore_riboseq/samplesheet.csv
+  metadata:
+    path: ./examples/nfcore_riboseq/metadata.csv
+execution:
+  mode: command_only
+  approved: false
+  profile: singularity
+  resume: true
+  max_cpus: 12
+outputs:
+  outdir: ./results/nfcore_riboseq
+  report: ./results/nfcore_riboseq/report.md
+  manifest: ./results/nfcore_riboseq/run_manifest.json
