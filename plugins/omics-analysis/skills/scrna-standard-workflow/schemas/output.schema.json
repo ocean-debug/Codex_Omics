@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "workflow_plan_json": {"type": "string"},
+    "workflow_plan_md": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  }
+}

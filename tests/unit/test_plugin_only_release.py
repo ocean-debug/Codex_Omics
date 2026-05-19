@@ -22,6 +22,12 @@ def test_skill_reference_links_exist() -> None:
         Path("plugins/omics-analysis/skills/omics-report/SKILL.md"),
         Path("plugins/omics-analysis/skills/single-cell-rna-qc/SKILL.md"),
         Path("plugins/omics-analysis/skills/single-cell-preprocess/SKILL.md"),
+        Path("plugins/omics-analysis/skills/single-cell-integration/SKILL.md"),
+        Path("plugins/omics-analysis/skills/single-cell-marker-de/SKILL.md"),
+        Path("plugins/omics-analysis/skills/single-cell-annotation/SKILL.md"),
+        Path("plugins/omics-analysis/skills/pathway-enrichment/SKILL.md"),
+        Path("plugins/omics-analysis/skills/bulk-rna-de/SKILL.md"),
+        Path("plugins/omics-analysis/skills/scrna-standard-workflow/SKILL.md"),
         Path("plugins/omics-analysis/skills/skill-authoring-kit/SKILL.md"),
     ]
     for skill_path in skill_paths:
@@ -41,6 +47,12 @@ def test_skill_registry_paths_are_complete() -> None:
         "scvi-tools",
         "single-cell-rna-qc",
         "single-cell-preprocess",
+        "single-cell-integration",
+        "single-cell-marker-de",
+        "single-cell-annotation",
+        "pathway-enrichment",
+        "bulk-rna-de",
+        "scrna-standard-workflow",
         "omics-report",
         "skill-authoring-kit",
     }
@@ -110,6 +122,84 @@ def test_single_cell_preprocess_registry_contract() -> None:
     assert entry["public_entrypoint"] is True
     assert "preprocess" in entry["router_keywords"]
     assert entry["approval"]["required_for_execution"] is True
+
+
+def test_single_cell_marker_de_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["single-cell-marker-de"]
+    assert entry["layer"] == "task"
+    assert entry["domain"] == "single_cell"
+    assert entry["backends"] == ["scanpy", "anndata"]
+    assert entry["public_entrypoint"] is True
+    assert "marker genes" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is True
+
+
+def test_single_cell_integration_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["single-cell-integration"]
+    assert entry["layer"] == "task"
+    assert entry["domain"] == "single_cell"
+    assert entry["backends"] == ["scanpy-combat", "scvi", "harmony", "scanorama"]
+    assert entry["public_entrypoint"] is True
+    assert "batch correction" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is True
+
+
+def test_single_cell_annotation_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["single-cell-annotation"]
+    assert entry["layer"] == "task"
+    assert entry["domain"] == "single_cell"
+    assert entry["backends"] == ["marker-based", "celltypist", "singler", "scanvi"]
+    assert entry["public_entrypoint"] is True
+    assert "cell type annotation" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is True
+
+
+def test_pathway_enrichment_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["pathway-enrichment"]
+    assert entry["layer"] == "task"
+    assert entry["domain"] == "multiomics"
+    assert entry["backends"] == ["standard-library"]
+    assert entry["public_entrypoint"] is True
+    assert "pathway enrichment" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is True
+
+
+def test_bulk_rna_de_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["bulk-rna-de"]
+    assert entry["layer"] == "task"
+    assert entry["domain"] == "bulk_rna"
+    assert entry["backends"] == ["standard-library"]
+    assert entry["public_entrypoint"] is True
+    assert "bulk rna de" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is True
+
+
+def test_scrna_standard_workflow_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["scrna-standard-workflow"]
+    assert entry["layer"] == "workflow"
+    assert entry["domain"] == "single_cell"
+    assert "single-cell-preprocess" in entry["composes"]
+    assert entry["public_entrypoint"] is True
+    assert "scrna workflow" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is False
 
 
 def test_migrated_alias_skills_are_removed() -> None:

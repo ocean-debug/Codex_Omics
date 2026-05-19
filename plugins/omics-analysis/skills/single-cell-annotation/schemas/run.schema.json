@@ -1,0 +1,13 @@
+{
+  "title": "single-cell-annotation run manifest",
+  "type": "object",
+  "properties": {
+    "skill": {"const": "single-cell-annotation"},
+    "status": {"type": "string"},
+    "inputs": {"type": "object"},
+    "outputs": {"type": "object"},
+    "parameters": {"type": "object"},
+    "summary": {"type": "object"}
+  },
+  "required": ["skill", "status", "inputs", "outputs", "parameters"]
+}

@@ -1,0 +1,14 @@
+{
+  "title": "bulk-rna-de config",
+  "type": "object",
+  "properties": {
+    "contrast": {"type": "string"},
+    "gene_column": {"type": "string"},
+    "sample_column": {"type": "string"},
+    "min_count": {"type": "number"},
+    "min_samples": {"type": "integer"},
+    "padj_threshold": {"type": "number"},
+    "lfc_threshold": {"type": "number"}
+  },
+  "required": ["contrast"]
+}

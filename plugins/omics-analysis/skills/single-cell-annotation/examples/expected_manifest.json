@@ -1,0 +1,21 @@
+{
+  "skill": "single-cell-annotation",
+  "status": "planned",
+  "inputs": {
+    "path": "preprocessed.h5ad",
+    "backend": "marker-based",
+    "groupby": "leiden",
+    "marker_reference": "marker_reference.csv"
+  },
+  "outputs": {
+    "annotated_h5ad": "results/annotation/annotated.h5ad",
+    "annotations_csv": "results/annotation/annotations.csv",
+    "summary": "results/annotation/annotation_summary.json",
+    "manifest": "results/annotation/run_manifest.json",
+    "report": "results/annotation/report.md"
+  },
+  "parameters": {
+    "backend": "marker-based",
+    "groupby": "leiden"
+  }
+}

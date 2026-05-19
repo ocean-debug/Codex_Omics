@@ -1,0 +1,22 @@
+{
+  "skill": "bulk-rna-de",
+  "status": "planned",
+  "inputs": {
+    "counts": "counts.csv",
+    "metadata": "metadata.csv"
+  },
+  "outputs": {
+    "de_results": "results/bulk_de/de_results.csv",
+    "summary": "results/bulk_de/de_summary.json",
+    "manifest": "results/bulk_de/run_manifest.json",
+    "report": "results/bulk_de/report.md"
+  },
+  "parameters": {
+    "contrast": {
+      "variable": "condition",
+      "reference": "control",
+      "target": "treatment"
+    },
+    "method": "exploratory_log2_cpm_welch"
+  }
+}

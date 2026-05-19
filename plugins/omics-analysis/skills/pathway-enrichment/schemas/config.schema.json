@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pathway-enrichment config",
+  "type": "object",
+  "properties": {
+    "mode": {"type": "string"},
+    "gene_column": {"type": "string"},
+    "group_column": {"type": "string"},
+    "score_column": {"type": "string"},
+    "top_n": {"type": "integer"},
+    "min_overlap": {"type": "integer"},
+    "min_set_size": {"type": "integer"},
+    "max_set_size": {"type": "integer"},
+    "padj_threshold": {"type": "number"}
+  }
+}

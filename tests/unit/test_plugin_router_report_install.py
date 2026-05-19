@@ -227,6 +227,184 @@ def test_router_routes_single_cell_preprocess(tmp_path: Path) -> None:
     assert "filtered cells.h5ad'" in payload["plan"]["commands"][1]
 
 
+def test_router_routes_single_cell_integration(tmp_path: Path) -> None:
+    h5ad = tmp_path / "preprocessed cells.h5ad"
+    h5ad.write_text("", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "integrate batches with combat batch correction",
+            "--input",
+            str(h5ad),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "single-cell-integration"
+    assert payload["router_plan"]["selected_skill"] == "single-cell-integration"
+    assert "single_cell_integration" in payload["router_plan"]["detected_intents"]
+    assert payload["plan"]["backend"] == "scanpy-combat"
+    assert "single-cell-integration/scripts/plan.py" in payload["plan"]["commands"][2]
+    assert "preprocessed cells.h5ad'" in payload["plan"]["commands"][1]
+
+
+def test_router_routes_single_cell_marker_de(tmp_path: Path) -> None:
+    h5ad = tmp_path / "preprocessed cells.h5ad"
+    h5ad.write_text("", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "find marker genes for leiden clusters",
+            "--input",
+            str(h5ad),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "single-cell-marker-de"
+    assert payload["router_plan"]["selected_skill"] == "single-cell-marker-de"
+    assert "single_cell_marker_de" in payload["router_plan"]["detected_intents"]
+    assert "single-cell-marker-de/scripts/plan.py" in payload["plan"]["commands"][2]
+    assert "preprocessed cells.h5ad'" in payload["plan"]["commands"][1]
+
+
+def test_router_routes_single_cell_annotation(tmp_path: Path) -> None:
+    h5ad = tmp_path / "preprocessed cells.h5ad"
+    h5ad.write_text("", encoding="utf-8")
+    marker_ref = tmp_path / "marker_reference.csv"
+    marker_ref.write_text("cell_type,gene\nT cell,CD3D\n", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "annotate cell types for leiden clusters",
+            "--input",
+            str(h5ad),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "single-cell-annotation"
+    assert payload["router_plan"]["selected_skill"] == "single-cell-annotation"
+    assert "single_cell_annotation" in payload["router_plan"]["detected_intents"]
+    assert "single-cell-annotation/scripts/plan.py" in payload["plan"]["commands"][2]
+    assert "marker_reference.csv" in payload["plan"]["commands"][1]
+
+
+def test_router_routes_pathway_enrichment(tmp_path: Path) -> None:
+    markers = tmp_path / "markers.csv"
+    markers.write_text("group,names\n0,GeneA\n", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "run pathway enrichment for marker genes",
+            "--input",
+            str(markers),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "pathway-enrichment"
+    assert payload["router_plan"]["selected_skill"] == "pathway-enrichment"
+    assert "pathway_enrichment" in payload["router_plan"]["detected_intents"]
+    assert "pathway-enrichment/scripts/plan.py" in payload["plan"]["commands"][2]
+    assert "gene_sets.gmt" in payload["plan"]["commands"][1]
+
+
+def test_router_routes_bulk_rna_de(tmp_path: Path) -> None:
+    counts = tmp_path / "counts.csv"
+    counts.write_text("gene,c1,c2,t1,t2\nGeneA,10,12,100,120\n", encoding="utf-8")
+    (tmp_path / "metadata.csv").write_text("sample,condition\nc1,control\nc2,control\nt1,treatment\nt2,treatment\n", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "run bulk RNA differential expression from counts metadata contrast",
+            "--input",
+            str(counts),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "bulk-rna-de"
+    assert payload["router_plan"]["selected_skill"] == "bulk-rna-de"
+    assert "bulk_rna_de" in payload["router_plan"]["detected_intents"]
+    assert "bulk-rna-de/scripts/plan.py" in payload["plan"]["commands"][2]
+    assert "metadata.csv" in payload["plan"]["commands"][1]
+
+
+def test_router_routes_scrna_standard_workflow(tmp_path: Path) -> None:
+    h5ad = tmp_path / "cells.h5ad"
+    h5ad.write_text("", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "plan an end-to-end scrna workflow with qc preprocess integrate annotate markers enrichment",
+            "--input",
+            str(h5ad),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "scrna-standard-workflow"
+    assert payload["router_plan"]["selected_skill"] == "scrna-standard-workflow"
+    assert payload["router_plan"]["selected_pipeline"] == "scrna-standard-workflow"
+    assert "scrna_standard_workflow" in payload["router_plan"]["detected_intents"]
+    assert "scrna-standard-workflow/scripts/plan.py" in payload["plan"]["commands"][2]
+
+
 def test_report_renderer_from_manifest(tmp_path: Path) -> None:
     manifest = tmp_path / "run_manifest.json"
     manifest.write_text(
@@ -269,6 +447,76 @@ def test_report_renderer_from_manifest(tmp_path: Path) -> None:
         assert section in text
     assert "Cells before filtering" in text
     assert "Removed cells" in text
+
+
+def test_report_renderer_summarizes_single_cell_integration(tmp_path: Path) -> None:
+    manifest = tmp_path / "run_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "skill": "single-cell-integration",
+                "status": "completed",
+                "run_id": "integration-test",
+                "created_at": "now",
+                "parameters": {"backend": "scanpy-combat", "batch_key": "batch"},
+                "summary": {"backend": "scanpy-combat", "batch_key": "batch", "n_cells": 12, "n_genes": 8, "n_batches": 2, "embedding_key": "X_pca_integrated", "has_umap": True},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report = tmp_path / "report.md"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-report/scripts/render_report.py",
+            "--manifest",
+            str(manifest),
+            "--out",
+            str(report),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    text = report.read_text(encoding="utf-8")
+    assert "Backend: `scanpy-combat`" in text
+    assert "Cells integrated: `12`" in text
+
+
+def test_report_renderer_summarizes_scrna_standard_workflow(tmp_path: Path) -> None:
+    manifest = tmp_path / "run_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "skill": "scrna-standard-workflow",
+                "status": "planned",
+                "run_id": "workflow-test",
+                "created_at": "now",
+                "summary": {"n_steps": 7, "step_ids": ["01_qc", "02_preprocess"], "plan_only": True},
+                "parameters": {"plan_only": True},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report = tmp_path / "report.md"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-report/scripts/render_report.py",
+            "--manifest",
+            str(manifest),
+            "--out",
+            str(report),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    text = report.read_text(encoding="utf-8")
+    assert "Plan only: `True`" in text
+    assert "Planned steps: `7`" in text
 
 
 def test_report_renderer_preserves_failed_manifest_details(tmp_path: Path) -> None:

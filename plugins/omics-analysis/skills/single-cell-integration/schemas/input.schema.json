@@ -1,0 +1,11 @@
+{
+  "title": "single-cell-integration input",
+  "type": "object",
+  "properties": {
+    "input": {"type": "string"},
+    "backend": {"type": "string"},
+    "batch_key": {"type": "string"},
+    "label_key": {"type": "string"}
+  },
+  "required": ["input", "backend", "batch_key"]
+}

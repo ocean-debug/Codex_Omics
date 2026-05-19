@@ -52,6 +52,24 @@ def route_request(prompt: str, input_path: Path, outdir: Path) -> dict[str, Any]
     elif skill == "single-cell-preprocess":
         env = inspect_scrna_qc_environment()
         plan = scrna_preprocess_plan(input_path, outdir)
+    elif skill == "single-cell-integration":
+        env = inspect_scrna_qc_environment()
+        plan = scrna_integration_plan(input_path, outdir, prompt_l)
+    elif skill == "single-cell-marker-de":
+        env = inspect_scrna_qc_environment()
+        plan = scrna_marker_de_plan(input_path, outdir)
+    elif skill == "single-cell-annotation":
+        env = inspect_scrna_qc_environment()
+        plan = scrna_annotation_plan(input_path, outdir, prompt_l)
+    elif skill == "pathway-enrichment":
+        env = {"status": "ready", "blockers": [], "warnings": []}
+        plan = pathway_enrichment_plan(input_path, outdir)
+    elif skill == "bulk-rna-de":
+        env = {"status": "ready", "blockers": [], "warnings": []}
+        plan = bulk_rna_de_plan(input_path, outdir)
+    elif skill == "scrna-standard-workflow":
+        env = {"status": "ready", "blockers": [], "warnings": []}
+        plan = scrna_standard_workflow_plan(input_path, outdir)
     elif skill == "nextflow-development":
         env = inspect_nextflow_environment()
         plan = nextflow_plan(input_path, outdir, prompt_l)
@@ -102,6 +120,12 @@ def detect_intents(prompt: str) -> list[str]:
         "model_training": ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "train", "latent", "batch correction", "label transfer"],
         "quality_control": ["qc", "quality control", "filter", "mitochondrial"],
         "single_cell_preprocessing": ["preprocess", "preprocessing", "normalize", "normalization", "log1p", "hvg", "pca", "neighbors", "umap", "leiden", "clustering"],
+        "single_cell_integration": ["single-cell integration", "integrate batches", "batch integration", "batch correction", "combat", "harmony", "scanorama", "integrated embedding", "remove batch effect"],
+        "single_cell_marker_de": ["marker genes", "markers", "cluster markers", "rank genes", "rank_genes_groups", "differential expression", "single-cell de", "cell type markers"],
+        "single_cell_annotation": ["cell type annotation", "annotate cells", "annotate cell types", "annotate", "annotation", "cell type", "marker annotation", "celltypist", "singler", "scanvi label transfer", "label transfer", "predicted cell type"],
+        "scrna_standard_workflow": ["scrna workflow", "single-cell workflow", "single cell workflow", "standard single-cell analysis", "end-to-end scrna", "end to end single-cell", "full single-cell analysis"],
+        "pathway_enrichment": ["pathway enrichment", "enrichment", "ora", "over representation", "gene set", "geneset", "go enrichment", "kegg", "reactome", "msigdb", "gsea"],
+        "bulk_rna_de": ["bulk rna de", "bulk-rna-de", "bulk rnaseq de", "bulk rna differential expression", "count matrix de", "counts metadata contrast", "deseq2", "edger", "limma"],
         "nextflow_workflow": ["nextflow", "nf-core", "rnaseq", "scrnaseq", "riboseq", "spatialvi", "atacseq", "sarek", "fastq"],
         "reporting": ["report", "manifest", "methods", "interpret"],
         "skill_authoring": ["new skill", "add workflow", "bulk-rna-de", "go-enrichment", "cellchat", "grn", "author skill"],
@@ -134,6 +158,20 @@ def score_candidates(prompt: str, inventory: dict[str, Any], registry: dict[str,
             score += 4
         if skill_id == "single-cell-preprocess" and "h5ad" in observed_formats and any(token in prompt for token in ["preprocess", "normalization", "normalize", "log1p", "hvg", "pca", "umap", "leiden", "clustering"]):
             score += 4
+        if skill_id == "single-cell-integration" and "h5ad" in observed_formats and any(token in prompt for token in ["integrat", "batch correction", "batch integration", "combat", "harmony", "scanorama", "remove batch"]):
+            score += 5
+        if skill_id == "single-cell-marker-de" and "h5ad" in observed_formats and any(token in prompt for token in ["marker", "markers", "rank genes", "rank_genes_groups", "differential expression", "single-cell de"]):
+            score += 4
+        if skill_id == "single-cell-annotation" and any(token in prompt for token in ["annotat", "cell type", "celltypist", "singler", "scanvi label", "label transfer", "predicted cell type"]):
+            score += 5
+        if skill_id == "scrna-standard-workflow" and "h5ad" in observed_formats and any(token in prompt for token in ["scrna workflow", "single-cell workflow", "single cell workflow", "standard single-cell", "end-to-end", "end to end", "full single-cell"]):
+            score += 7
+        if skill_id == "pathway-enrichment" and any(token in prompt for token in ["pathway", "enrichment", "ora", "gene set", "go", "kegg", "reactome", "msigdb", "gsea"]):
+            score += 4
+        if skill_id == "bulk-rna-de" and any(token in prompt for token in ["bulk rna", "bulk-rna", "counts", "count matrix", "deseq2", "edger", "limma"]):
+            score += 4
+        if skill_id == "bulk-rna-de" and any(token in prompt for token in ["new skill", "add new skill", "create skill", "author skill"]):
+            score -= 4
         if skill_id == "nextflow-development" and "fastq" in observed_formats:
             score += 4
         if skill_id == "scvi-tools" and "h5ad" in observed_formats and any(token in prompt for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch", "latent"]):
@@ -229,6 +267,111 @@ def scrna_preprocess_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
     }
 
 
+def scrna_integration_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
+    integration_out = outdir / "single_cell_integration"
+    backend = (
+        "scvi"
+        if "scvi" in prompt
+        else "harmony"
+        if "harmony" in prompt
+        else "scanorama"
+        if "scanorama" in prompt
+        else "scanpy-combat"
+    )
+    return {
+        "approval_required": True,
+        "backend": backend,
+        "commands": [
+            "python plugins/omics-analysis/skills/single-cell-integration/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/single-cell-integration/scripts/validate_input.py --input {quote_arg(input_path)} --backend {backend} --batch-key batch --json",
+            f"python plugins/omics-analysis/skills/single-cell-integration/scripts/plan.py --input {quote_arg(input_path)} --output-dir {quote_arg(integration_out)} --backend {backend} --batch-key batch --dry-run --json",
+        ],
+        "approved_command": f"python plugins/omics-analysis/skills/single-cell-integration/scripts/run.py --input {quote_arg(input_path)} --output-dir {quote_arg(integration_out)} --backend {backend} --batch-key batch --approved true --write-manifest",
+    }
+
+
+def scrna_marker_de_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
+    marker_out = outdir / "single_cell_marker_de"
+    return {
+        "approval_required": True,
+        "commands": [
+            "python plugins/omics-analysis/skills/single-cell-marker-de/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/single-cell-marker-de/scripts/validate_input.py --input {quote_arg(input_path)} --groupby leiden --json",
+            f"python plugins/omics-analysis/skills/single-cell-marker-de/scripts/plan.py --input {quote_arg(input_path)} --output-dir {quote_arg(marker_out)} --groupby leiden --dry-run --json",
+        ],
+        "approved_command": f"python plugins/omics-analysis/skills/single-cell-marker-de/scripts/run.py --input {quote_arg(input_path)} --output-dir {quote_arg(marker_out)} --groupby leiden --approved true --write-manifest",
+    }
+
+
+def scrna_annotation_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
+    annotation_out = outdir / "single_cell_annotation"
+    backend = (
+        "celltypist"
+        if "celltypist" in prompt
+        else "singler"
+        if "singler" in prompt or "singleR" in prompt
+        else "scanvi"
+        if "scanvi" in prompt or "label transfer" in prompt
+        else "marker-based"
+    )
+    marker_reference = input_path.parent / "marker_reference.csv" if input_path.is_file() else input_path / "marker_reference.csv"
+    commands = [
+        "python plugins/omics-analysis/skills/single-cell-annotation/scripts/check_environment.py --json",
+        f"python plugins/omics-analysis/skills/single-cell-annotation/scripts/validate_input.py --input {quote_arg(input_path)} --backend {backend} --marker-reference {quote_arg(marker_reference)} --groupby leiden --json",
+        f"python plugins/omics-analysis/skills/single-cell-annotation/scripts/plan.py --input {quote_arg(input_path)} --output-dir {quote_arg(annotation_out)} --backend {backend} --marker-reference {quote_arg(marker_reference)} --groupby leiden --dry-run --json",
+    ]
+    return {
+        "approval_required": True,
+        "backend": backend,
+        "commands": commands,
+        "approved_command": f"python plugins/omics-analysis/skills/single-cell-annotation/scripts/run.py --input {quote_arg(input_path)} --output-dir {quote_arg(annotation_out)} --backend {backend} --marker-reference {quote_arg(marker_reference)} --groupby leiden --approved true --write-manifest",
+    }
+
+
+def pathway_enrichment_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
+    enrichment_out = outdir / "pathway_enrichment"
+    gene_sets = input_path.parent / "gene_sets.gmt" if input_path.is_file() else input_path / "gene_sets.gmt"
+    return {
+        "approval_required": True,
+        "commands": [
+            "python plugins/omics-analysis/skills/pathway-enrichment/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/pathway-enrichment/scripts/validate_input.py --input {quote_arg(input_path)} --gene-sets {quote_arg(gene_sets)} --json",
+            f"python plugins/omics-analysis/skills/pathway-enrichment/scripts/plan.py --input {quote_arg(input_path)} --gene-sets {quote_arg(gene_sets)} --output-dir {quote_arg(enrichment_out)} --dry-run --json",
+        ],
+        "approved_command": f"python plugins/omics-analysis/skills/pathway-enrichment/scripts/run.py --input {quote_arg(input_path)} --gene-sets {quote_arg(gene_sets)} --output-dir {quote_arg(enrichment_out)} --approved true --write-manifest",
+    }
+
+
+def bulk_rna_de_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
+    bulk_out = outdir / "bulk_rna_de"
+    counts = input_path / "counts.csv" if input_path.is_dir() else input_path
+    metadata = input_path / "metadata.csv" if input_path.is_dir() else input_path.parent / "metadata.csv"
+    contrast = "condition:control:treatment"
+    return {
+        "approval_required": True,
+        "commands": [
+            "python plugins/omics-analysis/skills/bulk-rna-de/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/bulk-rna-de/scripts/validate_input.py --counts {quote_arg(counts)} --metadata {quote_arg(metadata)} --contrast {quote_arg(contrast)} --json",
+            f"python plugins/omics-analysis/skills/bulk-rna-de/scripts/plan.py --counts {quote_arg(counts)} --metadata {quote_arg(metadata)} --contrast {quote_arg(contrast)} --output-dir {quote_arg(bulk_out)} --dry-run --json",
+        ],
+        "approved_command": f"python plugins/omics-analysis/skills/bulk-rna-de/scripts/run.py --counts {quote_arg(counts)} --metadata {quote_arg(metadata)} --contrast {quote_arg(contrast)} --output-dir {quote_arg(bulk_out)} --approved true --write-manifest",
+    }
+
+
+def scrna_standard_workflow_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
+    workflow_out = outdir / "scrna_standard_workflow"
+    return {
+        "approval_required": False,
+        "pipeline": "scrna-standard-workflow",
+        "commands": [
+            "python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/validate_input.py --input {quote_arg(input_path)} --json",
+            f"python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/plan.py --input {quote_arg(input_path)} --output-dir {quote_arg(workflow_out)} --dry-run --json",
+        ],
+        "approved_command": "",
+    }
+
+
 def scvi_plan(input_path: Path, outdir: Path, prompt: str) -> dict[str, Any]:
     model = "SCANVI" if "scanvi" in prompt else "TOTALVI" if "totalvi" in prompt else "PEAKVI" if "peakvi" in prompt else "MULTIVI" if "multivi" in prompt else "SCVI"
     scvi_out = outdir / "scvi"
@@ -300,6 +443,12 @@ def requirements_for(skill: str) -> list[str]:
     return {
         "single-cell-rna-qc": ["scanpy", "anndata", "numpy", "scipy", "pandas", "matplotlib", "seaborn"],
         "single-cell-preprocess": ["scanpy", "anndata", "numpy", "scipy", "pandas"],
+        "single-cell-integration": ["scanpy", "anndata", "numpy", "scipy", "pandas", "optional scvi-tools/harmonypy/scanorama for non-default backends"],
+        "single-cell-marker-de": ["scanpy", "anndata", "numpy", "scipy", "pandas"],
+        "single-cell-annotation": ["scanpy", "anndata", "numpy", "pandas", "local marker reference for marker-based; optional CellTypist/SingleR/SCANVI resources"],
+        "pathway-enrichment": ["Python standard library", "local GMT/CSV gene sets"],
+        "bulk-rna-de": ["Python standard library", "local count matrix", "local metadata", "explicit contrast"],
+        "scrna-standard-workflow": ["Codex-Omics child skills", "local h5ad input", "child-step approvals for execution"],
         "scvi-tools": ["scvi-tools", "torch", "scanpy", "anndata", "GPU optional but recommended"],
         "nextflow-development": ["Java 17+", "Nextflow", "nf-core", "git", "Singularity/Apptainer or Docker"],
     }.get(skill, [])

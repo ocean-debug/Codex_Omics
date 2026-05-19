@@ -1,0 +1,11 @@
+{
+  "title": "bulk-rna-de output",
+  "type": "object",
+  "properties": {
+    "de_results": {"type": "string"},
+    "summary": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  },
+  "required": ["de_results", "summary", "manifest", "report"]
+}

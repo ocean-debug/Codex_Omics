@@ -1,0 +1,14 @@
+{
+  "title": "single-cell-annotation config",
+  "type": "object",
+  "properties": {
+    "backend": {"enum": ["marker-based", "celltypist", "singler", "scanvi"]},
+    "groupby": {"type": "string"},
+    "annotation_key": {"type": "string"},
+    "confidence_key": {"type": "string"},
+    "min_score": {"type": "number"},
+    "min_score_ratio": {"type": "number"},
+    "use_raw": {"enum": ["auto", "true", "false"]}
+  },
+  "required": ["backend"]
+}

@@ -1,0 +1,8 @@
+input: preprocessed.h5ad
+output_dir: results/integration
+backend: scanpy-combat
+batch_key: batch
+label_key: cell_type
+n_pcs: 20
+neighbors: 10
+mode: dry_run_first

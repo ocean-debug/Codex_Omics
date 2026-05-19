@@ -1,7 +1,7 @@
 {
   "name": "omics-analysis",
   "version": "1.0.0",
-  "description": "Codex-compatible omics analysis plugin collection with self-contained skills for single-cell RNA-seq QC/preprocessing, scvi-tools, and Nextflow/nf-core workflows.",
+  "description": "Codex-compatible omics analysis plugin collection with self-contained skills for single-cell RNA-seq QC/preprocessing/integration/annotation/marker analysis, scRNA workflow planning, pathway enrichment, bulk RNA DE, scvi-tools, and Nextflow/nf-core workflows.",
   "author": {
     "name": "Codex Omics Skills maintainers"
   },
@@ -13,6 +13,7 @@
     "nf-core",
     "nextflow",
     "single-cell",
+    "bulk-rna",
     "scvi-tools"
   ],
   "skills": "./skills/",
@@ -30,7 +31,7 @@
     "defaultPrompt": [
       "Inspect an input directory and choose the right omics skill.",
       "Prepare a Nextflow nf-core run for FASTQ data.",
-      "Run scRNA-seq QC and preprocessing on an h5ad file.",
+      "Plan a standard scRNA workflow, or run scRNA-seq QC, preprocessing, integration, annotation, marker analysis, pathway enrichment, and bulk RNA DE.",
       "Train an approved scvi-tools integration model."
     ],
     "brandColor": "#2563EB"

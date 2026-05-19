@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "skip_integration": {"type": "boolean"},
+    "skip_annotation": {"type": "boolean"},
+    "skip_marker_de": {"type": "boolean"},
+    "skip_enrichment": {"type": "boolean"}
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "skill": "pathway-enrichment",
+  "status": "planned",
+  "inputs": {
+    "path": "replace_me_markers.csv",
+    "gene_sets": "replace_me_gene_sets.gmt"
+  },
+  "outputs": {
+    "enrichment_csv": "results/pathway_enrichment/enrichment.csv",
+    "summary": "results/pathway_enrichment/enrichment_summary.json",
+    "manifest": "results/pathway_enrichment/run_manifest.json",
+    "report": "results/pathway_enrichment/report.md"
+  },
+  "parameters": {
+    "mode": "ora",
+    "gene_column": "auto",
+    "group_column": "group",
+    "score_column": "scores",
+    "top_n": 100,
+    "min_overlap": 2,
+    "min_set_size": 3,
+    "max_set_size": 500,
+    "padj_threshold": 0.05
+  }
+}

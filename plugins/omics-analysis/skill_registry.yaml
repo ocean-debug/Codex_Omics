@@ -156,6 +156,203 @@ skills:
     examples: ["skills/single-cell-preprocess/examples/demo_config.yaml", "skills/single-cell-preprocess/examples/expected_manifest.json"]
     router_keywords: ["preprocess", "preprocessing", "normalize", "normalization", "log1p", "hvg", "highly variable", "pca", "neighbors", "umap", "leiden", "clustering"]
     workflow_diagram: "skills/single-cell-preprocess/references/workflow.md"
+  single-cell-integration:
+    skill_id: "single-cell-integration"
+    layer: "task"
+    domain: "single_cell"
+    backends: ["scanpy-combat", "scvi", "harmony", "scanorama"]
+    composes: ["scvi-tools"]
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["batch_integration", "batch_correction", "integrated_embedding", "integration_diagnostics"]
+    input_formats: ["h5ad"]
+    constraints: ["dry_run_default", "approval_required", "no_in_place_mutation", "no_dependency_install"]
+    scripts:
+      check_environment: "skills/single-cell-integration/scripts/check_environment.py"
+      validate_input: "skills/single-cell-integration/scripts/validate_input.py"
+      plan: "skills/single-cell-integration/scripts/plan.py"
+      run: "skills/single-cell-integration/scripts/run.py"
+      summarize: "skills/single-cell-integration/scripts/summarize.py"
+    schemas:
+      input: "skills/single-cell-integration/schemas/input.schema.json"
+      config: "skills/single-cell-integration/schemas/config.schema.json"
+      output: "skills/single-cell-integration/schemas/output.schema.json"
+      run: "skills/single-cell-integration/schemas/run.schema.json"
+    outputs: ["integrated.h5ad", "integration_summary.json", "batch_diagnostics.csv", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/single-cell-integration/examples/demo_config.yaml", "skills/single-cell-integration/examples/expected_manifest.json"]
+    router_keywords: ["single-cell integration", "integrate batches", "batch integration", "batch correction", "combat", "harmony", "scanorama", "integrated embedding", "remove batch effect"]
+    workflow_diagram: "skills/single-cell-integration/references/workflow.md"
+  single-cell-marker-de:
+    skill_id: "single-cell-marker-de"
+    layer: "task"
+    domain: "single_cell"
+    backends: ["scanpy", "anndata"]
+    composes: []
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["marker_gene_detection", "rank_genes_groups", "cluster_markers", "single_cell_de"]
+    input_formats: ["h5ad"]
+    constraints: ["dry_run_default", "approval_required", "no_in_place_mutation"]
+    scripts:
+      check_environment: "skills/single-cell-marker-de/scripts/check_environment.py"
+      validate_input: "skills/single-cell-marker-de/scripts/validate_input.py"
+      plan: "skills/single-cell-marker-de/scripts/plan.py"
+      run: "skills/single-cell-marker-de/scripts/run.py"
+      summarize: "skills/single-cell-marker-de/scripts/summarize.py"
+    schemas:
+      input: "skills/single-cell-marker-de/schemas/input.schema.json"
+      config: "skills/single-cell-marker-de/schemas/config.schema.json"
+      output: "skills/single-cell-marker-de/schemas/output.schema.json"
+      run: "skills/single-cell-marker-de/schemas/run.schema.json"
+    outputs: ["markers.csv", "de_summary.json", "optional marker plots", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/single-cell-marker-de/examples/demo_config.yaml", "skills/single-cell-marker-de/examples/expected_manifest.json"]
+    router_keywords: ["marker genes", "markers", "cluster markers", "rank genes", "rank_genes_groups", "differential expression", "single-cell de", "cell type markers"]
+    workflow_diagram: "skills/single-cell-marker-de/references/workflow.md"
+  single-cell-annotation:
+    skill_id: "single-cell-annotation"
+    layer: "task"
+    domain: "single_cell"
+    backends: ["marker-based", "celltypist", "singler", "scanvi"]
+    composes: ["scvi-tools"]
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["cell_type_annotation", "marker_based_annotation", "label_transfer", "annotation_confidence"]
+    input_formats: ["h5ad"]
+    constraints: ["dry_run_default", "approval_required", "no_in_place_mutation", "no_model_downloads"]
+    scripts:
+      check_environment: "skills/single-cell-annotation/scripts/check_environment.py"
+      validate_input: "skills/single-cell-annotation/scripts/validate_input.py"
+      plan: "skills/single-cell-annotation/scripts/plan.py"
+      run: "skills/single-cell-annotation/scripts/run.py"
+      summarize: "skills/single-cell-annotation/scripts/summarize.py"
+    schemas:
+      input: "skills/single-cell-annotation/schemas/input.schema.json"
+      config: "skills/single-cell-annotation/schemas/config.schema.json"
+      output: "skills/single-cell-annotation/schemas/output.schema.json"
+      run: "skills/single-cell-annotation/schemas/run.schema.json"
+    outputs: ["annotated.h5ad", "annotations.csv", "annotation_confidence.csv", "annotation_summary.json", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/single-cell-annotation/examples/demo_config.yaml", "skills/single-cell-annotation/examples/expected_manifest.json"]
+    router_keywords: ["cell type annotation", "annotate cells", "annotate cell types", "annotate", "annotation", "cell type", "marker annotation", "celltypist", "singler", "singleR", "scanvi label transfer", "label transfer", "predicted cell type"]
+    workflow_diagram: "skills/single-cell-annotation/references/workflow.md"
+  pathway-enrichment:
+    skill_id: "pathway-enrichment"
+    layer: "task"
+    domain: "multiomics"
+    backends: ["standard-library"]
+    composes: []
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["pathway_enrichment", "over_representation_analysis", "ora", "gene_set_enrichment_summary"]
+    input_formats: ["markers_csv", "gene_list", "gene_sets_gmt", "gene_sets_csv"]
+    constraints: ["dry_run_default", "approval_required", "no_network_downloads", "local_gene_sets_required"]
+    scripts:
+      check_environment: "skills/pathway-enrichment/scripts/check_environment.py"
+      validate_input: "skills/pathway-enrichment/scripts/validate_input.py"
+      plan: "skills/pathway-enrichment/scripts/plan.py"
+      run: "skills/pathway-enrichment/scripts/run.py"
+      summarize: "skills/pathway-enrichment/scripts/summarize.py"
+    schemas:
+      input: "skills/pathway-enrichment/schemas/input.schema.json"
+      config: "skills/pathway-enrichment/schemas/config.schema.json"
+      output: "skills/pathway-enrichment/schemas/output.schema.json"
+      run: "skills/pathway-enrichment/schemas/run.schema.json"
+    outputs: ["enrichment.csv", "enrichment_summary.json", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/pathway-enrichment/examples/demo_config.yaml", "skills/pathway-enrichment/examples/expected_manifest.json"]
+    router_keywords: ["pathway enrichment", "enrichment", "ora", "over representation", "gene set", "geneset", "go enrichment", "kegg", "reactome", "msigdb", "gsea"]
+    workflow_diagram: "skills/pathway-enrichment/references/workflow.md"
+  bulk-rna-de:
+    skill_id: "bulk-rna-de"
+    layer: "task"
+    domain: "bulk_rna"
+    backends: ["standard-library"]
+    composes: []
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["bulk_rna_differential_expression", "count_table_de", "contrast_de"]
+    input_formats: ["counts_csv", "counts_tsv", "metadata_csv", "metadata_tsv"]
+    constraints: ["dry_run_default", "approval_required", "explicit_contrast_required", "no_external_de_backend"]
+    scripts:
+      check_environment: "skills/bulk-rna-de/scripts/check_environment.py"
+      validate_input: "skills/bulk-rna-de/scripts/validate_input.py"
+      plan: "skills/bulk-rna-de/scripts/plan.py"
+      run: "skills/bulk-rna-de/scripts/run.py"
+      summarize: "skills/bulk-rna-de/scripts/summarize.py"
+    schemas:
+      input: "skills/bulk-rna-de/schemas/input.schema.json"
+      config: "skills/bulk-rna-de/schemas/config.schema.json"
+      output: "skills/bulk-rna-de/schemas/output.schema.json"
+      run: "skills/bulk-rna-de/schemas/run.schema.json"
+    outputs: ["de_results.csv", "de_summary.json", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/bulk-rna-de/examples/demo_config.yaml", "skills/bulk-rna-de/examples/expected_manifest.json"]
+    router_keywords: ["bulk rna de", "bulk-rna-de", "bulk rnaseq de", "bulk rna differential expression", "count matrix de", "counts metadata contrast", "deseq2", "edger", "limma"]
+    workflow_diagram: "skills/bulk-rna-de/references/workflow.md"
+  scrna-standard-workflow:
+    skill_id: "scrna-standard-workflow"
+    layer: "workflow"
+    domain: "single_cell"
+    backends: ["codex-omics-skills"]
+    composes: ["single-cell-rna-qc", "single-cell-preprocess", "single-cell-integration", "single-cell-annotation", "single-cell-marker-de", "pathway-enrichment", "omics-report"]
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["scrna_standard_workflow", "single_cell_end_to_end_plan", "compose_single_cell_skills"]
+    input_formats: ["h5ad"]
+    constraints: ["plan_only", "dry_run_default", "child_approval_required", "no_child_auto_execution"]
+    scripts:
+      check_environment: "skills/scrna-standard-workflow/scripts/check_environment.py"
+      validate_input: "skills/scrna-standard-workflow/scripts/validate_input.py"
+      plan: "skills/scrna-standard-workflow/scripts/plan.py"
+      run: "skills/scrna-standard-workflow/scripts/run.py"
+      summarize: "skills/scrna-standard-workflow/scripts/summarize.py"
+    schemas:
+      input: "skills/scrna-standard-workflow/schemas/input.schema.json"
+      config: "skills/scrna-standard-workflow/schemas/config.schema.json"
+      output: "skills/scrna-standard-workflow/schemas/output.schema.json"
+      run: "skills/scrna-standard-workflow/schemas/run.schema.json"
+    outputs: ["workflow_plan.json", "workflow_plan.md", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: false
+      default_mode: "planned"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/scrna-standard-workflow/examples/demo_config.yaml", "skills/scrna-standard-workflow/examples/expected_manifest.json"]
+    router_keywords: ["scrna workflow", "single-cell workflow", "single cell workflow", "standard single-cell analysis", "end-to-end scrna", "end to end single-cell", "qc preprocess integrate annotate markers enrichment"]
+    workflow_diagram: "skills/scrna-standard-workflow/references/workflow.md"
   omics-report:
     skill_id: "omics-report"
     layer: "system"

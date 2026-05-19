@@ -38,6 +38,71 @@ python plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py --inp
 
 This skill keeps QC separate from preprocessing. It writes `preprocessed.h5ad`, `preprocess_summary.json`, `run_manifest.json`, and `report.md`.
 
+## single-cell-integration
+
+```bash
+python plugins/omics-analysis/skills/single-cell-integration/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/single-cell-integration/scripts/validate_input.py --input preprocessed.h5ad --batch-key batch --json
+python plugins/omics-analysis/skills/single-cell-integration/scripts/plan.py --input preprocessed.h5ad --output-dir results/integration --backend scanpy-combat --batch-key batch --dry-run --json
+python plugins/omics-analysis/skills/single-cell-integration/scripts/run.py --input preprocessed.h5ad --output-dir results/integration --backend scanpy-combat --batch-key batch --approved true --write-manifest
+```
+
+This skill writes `integrated.h5ad`, `integration_summary.json`, `batch_diagnostics.csv`, `run_manifest.json`, and `report.md`. `scanpy-combat` is the approved lightweight backend in the first release; `scvi`, `harmony`, and `scanorama` return planned or blocked manifests unless their execution path is added later.
+
+## single-cell-annotation
+
+```bash
+python plugins/omics-analysis/skills/single-cell-annotation/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/single-cell-annotation/scripts/validate_input.py --input preprocessed.h5ad --backend marker-based --marker-reference marker_reference.csv --groupby leiden --json
+python plugins/omics-analysis/skills/single-cell-annotation/scripts/plan.py --input preprocessed.h5ad --output-dir results/annotation --backend marker-based --marker-reference marker_reference.csv --groupby leiden --dry-run --json
+python plugins/omics-analysis/skills/single-cell-annotation/scripts/run.py --input preprocessed.h5ad --output-dir results/annotation --backend marker-based --marker-reference marker_reference.csv --groupby leiden --approved true --write-manifest
+```
+
+This skill writes `annotated.h5ad`, `annotations.csv`, `annotation_confidence.csv`, `annotation_summary.json`, `run_manifest.json`, and `report.md`. `marker-based` is executable in the first release; `celltypist`, `singler`, and `scanvi` are planned/blocked unless local dependencies and model/reference paths are available.
+
+## single-cell-marker-de
+
+```bash
+python plugins/omics-analysis/skills/single-cell-marker-de/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/single-cell-marker-de/scripts/validate_input.py --input preprocessed.h5ad --groupby leiden --json
+python plugins/omics-analysis/skills/single-cell-marker-de/scripts/plan.py --input preprocessed.h5ad --output-dir results/markers --groupby leiden --dry-run --json
+python plugins/omics-analysis/skills/single-cell-marker-de/scripts/run.py --input preprocessed.h5ad --output-dir results/markers --groupby leiden --approved true --write-manifest
+```
+
+This skill uses Scanpy `rank_genes_groups` for first-pass cluster or cell type markers. It writes `markers.csv`, `de_summary.json`, `run_manifest.json`, and `report.md`.
+
+## pathway-enrichment
+
+```bash
+python plugins/omics-analysis/skills/pathway-enrichment/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/pathway-enrichment/scripts/validate_input.py --input markers.csv --gene-sets gene_sets.gmt --json
+python plugins/omics-analysis/skills/pathway-enrichment/scripts/plan.py --input markers.csv --gene-sets gene_sets.gmt --output-dir results/enrichment --dry-run --json
+python plugins/omics-analysis/skills/pathway-enrichment/scripts/run.py --input markers.csv --gene-sets gene_sets.gmt --output-dir results/enrichment --approved true --write-manifest
+```
+
+This skill performs lightweight ORA with local GMT/CSV gene sets. It writes `enrichment.csv`, `enrichment_summary.json`, `run_manifest.json`, and `report.md`.
+
+## scrna-standard-workflow
+
+```bash
+python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/validate_input.py --input cells.h5ad --json
+python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/plan.py --input cells.h5ad --output-dir results/scrna_workflow --dry-run --json
+```
+
+This workflow skill is plan-only. It writes `workflow_plan.json`, `workflow_plan.md`, `run_manifest.json`, and `report.md`, with child dry-run and approved commands for QC, preprocessing, integration, annotation, marker detection, enrichment, and report rendering.
+
+## bulk-rna-de
+
+```bash
+python plugins/omics-analysis/skills/bulk-rna-de/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/bulk-rna-de/scripts/validate_input.py --counts counts.csv --metadata metadata.csv --contrast condition:control:treatment --json
+python plugins/omics-analysis/skills/bulk-rna-de/scripts/plan.py --counts counts.csv --metadata metadata.csv --contrast condition:control:treatment --output-dir results/bulk_de --dry-run --json
+python plugins/omics-analysis/skills/bulk-rna-de/scripts/run.py --counts counts.csv --metadata metadata.csv --contrast condition:control:treatment --output-dir results/bulk_de --approved true --write-manifest
+```
+
+This skill performs dependency-light exploratory log2-CPM DE from local count tables. It writes `de_results.csv`, `de_summary.json`, `run_manifest.json`, and `report.md`; use DESeq2/edgeR/limma for publication-grade modeling.
+
 ## scvi-tools
 
 ```bash

@@ -6,6 +6,12 @@ Before release:
 python -m compileall -q plugins scripts tests
 python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --help
 python plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py --help
+python plugins/omics-analysis/skills/single-cell-integration/scripts/run.py --help
+python plugins/omics-analysis/skills/single-cell-annotation/scripts/run.py --help
+python plugins/omics-analysis/skills/single-cell-marker-de/scripts/run.py --help
+python plugins/omics-analysis/skills/pathway-enrichment/scripts/run.py --help
+python plugins/omics-analysis/skills/bulk-rna-de/scripts/run.py --help
+python plugins/omics-analysis/skills/scrna-standard-workflow/scripts/run.py --help
 python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --help
 python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --help
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --help

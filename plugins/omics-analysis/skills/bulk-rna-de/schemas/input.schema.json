@@ -1,0 +1,10 @@
+{
+  "title": "bulk-rna-de input",
+  "type": "object",
+  "properties": {
+    "counts": {"type": "string"},
+    "metadata": {"type": "string"},
+    "contrast": {"type": "string"}
+  },
+  "required": ["counts", "metadata", "contrast"]
+}

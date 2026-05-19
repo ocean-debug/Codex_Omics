@@ -1,0 +1,12 @@
+input: replace_me_preprocessed.h5ad
+output_dir: results/single_cell_marker_de
+groupby: leiden
+method: wilcoxon
+reference: rest
+groups: []
+n_genes: 100
+min_cells_per_group: 3
+layer: null
+use_raw: auto
+make_plots: false
+approved: false

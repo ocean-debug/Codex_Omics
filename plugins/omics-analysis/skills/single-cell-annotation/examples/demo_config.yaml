@@ -1,0 +1,8 @@
+input: preprocessed.h5ad
+output_dir: results/annotation
+backend: marker-based
+groupby: leiden
+marker_reference: marker_reference.csv
+annotation_key: predicted_cell_type
+confidence_key: annotation_confidence
+mode: dry_run_first

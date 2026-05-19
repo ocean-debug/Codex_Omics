@@ -1,0 +1,13 @@
+{
+  "title": "single-cell-annotation input",
+  "type": "object",
+  "properties": {
+    "input": {"type": "string"},
+    "backend": {"type": "string"},
+    "groupby": {"type": "string"},
+    "marker_reference": {"type": "string"},
+    "model": {"type": "string"},
+    "reference": {"type": "string"}
+  },
+  "required": ["input", "backend"]
+}

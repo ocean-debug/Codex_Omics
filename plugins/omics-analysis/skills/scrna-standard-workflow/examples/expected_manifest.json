@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "skill": "scrna-standard-workflow",
+  "status": "planned",
+  "summary": {
+    "n_steps": 7,
+    "plan_only": true
+  },
+  "outputs": {
+    "workflow_plan_json": "results/scrna_workflow/workflow_plan.json",
+    "workflow_plan_md": "results/scrna_workflow/workflow_plan.md",
+    "manifest": "results/scrna_workflow/run_manifest.json",
+    "report": "results/scrna_workflow/report.md"
+  }
+}

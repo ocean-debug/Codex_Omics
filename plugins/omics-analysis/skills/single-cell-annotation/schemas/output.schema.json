@@ -1,0 +1,13 @@
+{
+  "title": "single-cell-annotation output",
+  "type": "object",
+  "properties": {
+    "annotated_h5ad": {"type": "string"},
+    "annotations_csv": {"type": "string"},
+    "confidence_csv": {"type": "string"},
+    "summary": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  },
+  "required": ["annotated_h5ad", "annotations_csv", "summary", "manifest", "report"]
+}

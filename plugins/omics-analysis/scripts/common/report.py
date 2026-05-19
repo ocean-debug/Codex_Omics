@@ -135,6 +135,62 @@ def key_results(manifest: dict[str, Any]) -> list[str]:
             f"- UMAP available: `{after.get('has_umap', 'unknown')}`",
             f"- Leiden clusters: `{after.get('leiden_clusters', 'unknown')}`",
         ]
+    if skill == "single-cell-integration":
+        return [
+            f"- Backend: `{summary.get('backend', manifest.get('parameters', {}).get('backend', 'unknown'))}`",
+            f"- Batch key: `{summary.get('batch_key', manifest.get('parameters', {}).get('batch_key', 'unknown'))}`",
+            f"- Cells integrated: `{summary.get('n_cells', 'unknown')}`",
+            f"- Genes retained: `{summary.get('n_genes', 'unknown')}`",
+            f"- Batches: `{summary.get('n_batches', 'unknown')}`",
+            f"- Integrated embedding: `{summary.get('embedding_key', 'not recorded') or 'not recorded'}`",
+            f"- UMAP available: `{summary.get('has_umap', 'unknown')}`",
+        ]
+    if skill == "single-cell-marker-de":
+        top_markers = summary.get("top_markers", {}) if isinstance(summary, dict) else {}
+        return [
+            f"- Grouping column: `{summary.get('groupby', 'unknown')}`",
+            f"- Marker rows: `{summary.get('n_markers', 'unknown')}`",
+            f"- Groups tested: `{len(summary.get('group_counts', {}) or {})}`",
+            f"- Method: `{summary.get('method', 'unknown')}`",
+            f"- Top marker groups summarized: `{len(top_markers)}`",
+        ]
+    if skill == "single-cell-annotation":
+        annotation_counts = summary.get("annotation_counts", {}) if isinstance(summary, dict) else {}
+        return [
+            f"- Backend: `{summary.get('backend', 'unknown')}`",
+            f"- Grouping column: `{summary.get('groupby', 'unknown')}`",
+            f"- Cells annotated: `{summary.get('n_cells', 'unknown')}`",
+            f"- Groups annotated: `{summary.get('n_groups', 'unknown')}`",
+            f"- Cell types assigned: `{summary.get('n_cell_types', 'unknown')}`",
+            f"- Low-confidence fraction: `{summary.get('low_confidence_fraction', 'unknown')}`",
+            f"- Annotation counts: `{annotation_counts}`",
+        ]
+    if skill == "pathway-enrichment":
+        top_terms = summary.get("top_terms", {}) if isinstance(summary, dict) else {}
+        return [
+            f"- Mode: `{summary.get('mode', 'unknown')}`",
+            f"- Gene groups: `{summary.get('n_groups', 'unknown')}`",
+            f"- Gene sets: `{summary.get('n_gene_sets', 'unknown')}`",
+            f"- Enrichment rows: `{summary.get('n_results', 'unknown')}`",
+            f"- Significant terms: `{summary.get('n_significant', 'unknown')}`",
+            f"- Top term groups summarized: `{len(top_terms)}`",
+        ]
+    if skill == "bulk-rna-de":
+        sample_counts = summary.get("sample_counts", {}) if isinstance(summary, dict) else {}
+        return [
+            f"- Method: `{summary.get('method', 'unknown')}`",
+            f"- Genes tested: `{summary.get('n_genes_tested', 'unknown')}`",
+            f"- Significant genes: `{summary.get('n_significant', 'unknown')}`",
+            f"- Up/down: `{summary.get('n_up', 'unknown')}` / `{summary.get('n_down', 'unknown')}`",
+            f"- Sample groups: `{sample_counts}`",
+        ]
+    if skill == "scrna-standard-workflow":
+        return [
+            f"- Plan only: `{summary.get('plan_only', manifest.get('parameters', {}).get('plan_only', 'unknown'))}`",
+            f"- Planned steps: `{summary.get('n_steps', 'unknown')}`",
+            f"- Step IDs: `{', '.join(summary.get('step_ids', []) or ['not recorded'])}`",
+            "- Child analyses are not executed by this workflow planner.",
+        ]
     if skill == "scvi-tools":
         return [
             f"- Model: `{summary.get('model', manifest.get('parameters', {}).get('model', 'unknown'))}`",

@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "required": ["input"],
+  "properties": {
+    "input": {"type": "string"},
+    "marker_reference": {"type": "string"},
+    "gene_sets": {"type": "string"},
+    "batch_key": {"type": "string"},
+    "groupby": {"type": "string"}
+  }
+}

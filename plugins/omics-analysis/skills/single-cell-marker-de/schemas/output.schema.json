@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-marker-de output",
+  "type": "object",
+  "required": ["markers_csv", "summary", "manifest", "report"],
+  "properties": {
+    "markers_csv": {"type": "string"},
+    "summary": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"},
+    "plots": {"type": "array", "items": {"type": "string"}}
+  }
+}

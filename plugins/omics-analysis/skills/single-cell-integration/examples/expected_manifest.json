@@ -1,0 +1,20 @@
+{
+  "skill": "single-cell-integration",
+  "status": "planned",
+  "inputs": {
+    "path": "preprocessed.h5ad",
+    "backend": "scanpy-combat",
+    "batch_key": "batch"
+  },
+  "outputs": {
+    "integrated_h5ad": "results/integration/integrated.h5ad",
+    "summary": "results/integration/integration_summary.json",
+    "batch_diagnostics": "results/integration/batch_diagnostics.csv",
+    "manifest": "results/integration/run_manifest.json",
+    "report": "results/integration/report.md"
+  },
+  "parameters": {
+    "backend": "scanpy-combat",
+    "batch_key": "batch"
+  }
+}

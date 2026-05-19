@@ -1,0 +1,13 @@
+{
+  "title": "single-cell-integration run manifest",
+  "type": "object",
+  "properties": {
+    "skill": {"const": "single-cell-integration"},
+    "status": {"type": "string"},
+    "inputs": {"type": "object"},
+    "outputs": {"type": "object"},
+    "parameters": {"type": "object"},
+    "summary": {"type": "object"}
+  },
+  "required": ["skill", "status", "inputs", "outputs", "parameters"]
+}

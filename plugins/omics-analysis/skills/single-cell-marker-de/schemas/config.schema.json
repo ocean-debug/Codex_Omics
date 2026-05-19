@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-marker-de config",
+  "type": "object",
+  "properties": {
+    "groupby": {"type": "string"},
+    "method": {"type": "string"},
+    "reference": {"type": "string"},
+    "groups": {"type": "array", "items": {"type": "string"}},
+    "n_genes": {"type": "integer"},
+    "min_cells_per_group": {"type": "integer"},
+    "layer": {"type": ["string", "null"]},
+    "use_raw": {"type": "string"},
+    "make_plots": {"type": "boolean"}
+  }
+}

@@ -1,0 +1,11 @@
+counts: counts.csv
+metadata: metadata.csv
+contrast: condition:control:treatment
+output_dir: results/bulk_de
+gene_column: auto
+sample_column: sample
+min_count: 10
+min_samples: 2
+padj_threshold: 0.05
+lfc_threshold: 1.0
+mode: dry_run_first

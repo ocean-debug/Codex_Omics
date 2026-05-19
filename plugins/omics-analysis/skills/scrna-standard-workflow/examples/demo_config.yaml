@@ -1,0 +1,11 @@
+input: cells.h5ad
+output_dir: results/scrna_workflow
+batch_key: batch
+groupby: leiden
+marker_reference: marker_reference.csv
+gene_sets: gene_sets.gmt
+skip_integration: false
+skip_annotation: false
+skip_marker_de: false
+skip_enrichment: false
+approved: false

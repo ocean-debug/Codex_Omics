@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-marker-de input",
+  "type": "object",
+  "required": ["input"],
+  "properties": {
+    "input": {"type": "string", "description": "Path to preprocessed h5ad input."},
+    "output_dir": {"type": "string"},
+    "groupby": {"type": "string"},
+    "method": {"type": "string", "enum": ["wilcoxon", "t-test", "t-test_overestim_var", "logreg"]},
+    "reference": {"type": "string"},
+    "groups": {"type": "array", "items": {"type": "string"}},
+    "n_genes": {"type": "integer"},
+    "min_cells_per_group": {"type": "integer"},
+    "layer": {"type": ["string", "null"]},
+    "use_raw": {"type": "string", "enum": ["auto", "true", "false"]}
+  }
+}

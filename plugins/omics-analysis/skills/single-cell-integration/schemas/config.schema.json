@@ -1,0 +1,13 @@
+{
+  "title": "single-cell-integration config",
+  "type": "object",
+  "properties": {
+    "backend": {"enum": ["scanpy-combat", "scvi", "harmony", "scanorama"]},
+    "batch_key": {"type": "string"},
+    "label_key": {"type": "string"},
+    "n_pcs": {"type": "integer"},
+    "neighbors": {"type": "integer"},
+    "embedding_key": {"type": "string"}
+  },
+  "required": ["backend", "batch_key"]
+}

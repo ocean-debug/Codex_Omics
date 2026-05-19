@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "skill": "single-cell-marker-de",
+  "status": "planned",
+  "inputs": {
+    "path": "replace_me_preprocessed.h5ad"
+  },
+  "outputs": {
+    "markers_csv": "results/single_cell_marker_de/markers.csv",
+    "summary": "results/single_cell_marker_de/de_summary.json",
+    "manifest": "results/single_cell_marker_de/run_manifest.json",
+    "report": "results/single_cell_marker_de/report.md"
+  },
+  "parameters": {
+    "groupby": "leiden",
+    "method": "wilcoxon",
+    "reference": "rest",
+    "groups": [],
+    "n_genes": 100,
+    "min_cells_per_group": 3,
+    "layer": null,
+    "use_raw": "auto",
+    "make_plots": false
+  }
+}

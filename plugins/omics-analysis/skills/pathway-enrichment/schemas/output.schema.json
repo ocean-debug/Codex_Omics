@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "pathway-enrichment output",
+  "type": "object",
+  "required": ["enrichment_csv", "summary", "manifest", "report"],
+  "properties": {
+    "enrichment_csv": {"type": "string"},
+    "summary": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  }
+}

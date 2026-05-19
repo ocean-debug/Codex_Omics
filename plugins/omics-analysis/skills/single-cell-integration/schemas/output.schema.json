@@ -1,0 +1,12 @@
+{
+  "title": "single-cell-integration output",
+  "type": "object",
+  "properties": {
+    "integrated_h5ad": {"type": "string"},
+    "summary": {"type": "string"},
+    "batch_diagnostics": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  },
+  "required": ["integrated_h5ad", "summary", "batch_diagnostics", "manifest", "report"]
+}

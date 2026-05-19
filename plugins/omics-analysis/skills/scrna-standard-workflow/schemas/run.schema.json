@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "required": ["schema_version", "skill", "status", "outputs"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "skill": {"const": "scrna-standard-workflow"},
+    "status": {"type": "string"},
+    "outputs": {"type": "object"},
+    "plan": {"type": "object"}
+  }
+}
