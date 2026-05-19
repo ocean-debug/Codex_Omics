@@ -28,6 +28,8 @@ needs non-Nextflow logic, custom analysis code, or a separate execution model.
 - Add router keywords in `omics-router/scripts/route_omics.py`.
   - Include the pipeline name and common assay/tool synonyms.
   - Route to `nextflow-development`, not a new skill.
+  - Keep the adapter inside the `nextflow-development` tool-family skill unless
+    it needs a separate non-Nextflow execution model.
 - Add a pipeline reference by copying `references/pipelines/_template.md`.
 - Add a minimal example under `examples/nfcore_<pipeline>/`.
 - Add unit tests for samplesheet generation, command construction, and routing.

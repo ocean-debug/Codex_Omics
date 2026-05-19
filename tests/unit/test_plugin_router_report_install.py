@@ -198,6 +198,35 @@ def test_router_routes_h5ad_scvi_and_qc_intents(tmp_path: Path) -> None:
         assert payload["router_plan"]["selected_skill"] == expected
 
 
+def test_router_routes_single_cell_preprocess(tmp_path: Path) -> None:
+    h5ad = tmp_path / "filtered cells.h5ad"
+    h5ad.write_text("", encoding="utf-8")
+    outdir = tmp_path / "route out"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
+            "--prompt",
+            "preprocess single-cell h5ad with normalization hvg umap leiden",
+            "--input",
+            str(h5ad),
+            "--outdir",
+            str(outdir),
+            "--json",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["selected_skill"] == "single-cell-preprocess"
+    assert payload["router_plan"]["selected_skill"] == "single-cell-preprocess"
+    assert "single_cell_preprocessing" in payload["router_plan"]["detected_intents"]
+    assert "single-cell-preprocess/scripts/plan.py" in payload["plan"]["commands"][2]
+    assert "filtered cells.h5ad'" in payload["plan"]["commands"][1]
+
+
 def test_report_renderer_from_manifest(tmp_path: Path) -> None:
     manifest = tmp_path / "run_manifest.json"
     manifest.write_text(

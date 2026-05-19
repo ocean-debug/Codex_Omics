@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-preprocess output",
+  "type": "object",
+  "required": ["preprocessed_h5ad", "summary", "manifest", "report"],
+  "properties": {
+    "preprocessed_h5ad": {"type": "string"},
+    "summary": {"type": "string"},
+    "manifest": {"type": "string"},
+    "report": {"type": "string"}
+  }
+}

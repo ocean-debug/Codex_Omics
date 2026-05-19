@@ -21,6 +21,7 @@ def test_skill_reference_links_exist() -> None:
         Path("plugins/omics-analysis/skills/omics-router/SKILL.md"),
         Path("plugins/omics-analysis/skills/omics-report/SKILL.md"),
         Path("plugins/omics-analysis/skills/single-cell-rna-qc/SKILL.md"),
+        Path("plugins/omics-analysis/skills/single-cell-preprocess/SKILL.md"),
         Path("plugins/omics-analysis/skills/skill-authoring-kit/SKILL.md"),
     ]
     for skill_path in skill_paths:
@@ -39,12 +40,22 @@ def test_skill_registry_paths_are_complete() -> None:
         "nextflow-development",
         "scvi-tools",
         "single-cell-rna-qc",
+        "single-cell-preprocess",
         "omics-report",
         "skill-authoring-kit",
     }
+    allowed_layers = {"system", "task", "tool_family", "workflow"}
+    allowed_domains = {"single_cell", "bulk_rna", "spatial", "multiomics", "reporting", "infrastructure"}
+    allowed_maturity = {"experimental", "validated"}
     for entry in registry["skills"].values():
         for key in [
             "skill_id",
+            "layer",
+            "domain",
+            "backends",
+            "composes",
+            "public_entrypoint",
+            "maturity",
             "tasks",
             "input_formats",
             "constraints",
@@ -58,10 +69,25 @@ def test_skill_registry_paths_are_complete() -> None:
             "workflow_diagram",
         ]:
             assert key in entry
+        assert entry["layer"] in allowed_layers, entry["skill_id"]
+        assert entry["domain"] in allowed_domains, entry["skill_id"]
+        assert isinstance(entry["backends"], list), entry["skill_id"]
+        assert isinstance(entry["composes"], list), entry["skill_id"]
+        assert isinstance(entry["public_entrypoint"], bool), entry["skill_id"]
+        assert entry["maturity"] in allowed_maturity, entry["skill_id"]
         assert entry["schemas"], entry["skill_id"]
         assert entry["workflow_diagram"], entry["skill_id"]
         assert entry["router_keywords"], entry["skill_id"]
     assert validate_registry_paths(registry) == []
+
+
+def test_skill_directories_remain_flat() -> None:
+    skill_root = Path("plugins/omics-analysis/skills")
+    nested_skill_markers = [
+        path for path in skill_root.glob("*/*/SKILL.md")
+        if path.parent.parent.name not in {"references", "examples", "schemas", "scripts"}
+    ]
+    assert nested_skill_markers == []
 
 
 def test_skill_registry_loads_without_pyyaml(monkeypatch) -> None:
@@ -71,6 +97,19 @@ def test_skill_registry_loads_without_pyyaml(monkeypatch) -> None:
 
     registry = load_skill_registry()
     assert "nextflow-development" in registry["skills"]
+
+
+def test_single_cell_preprocess_registry_contract() -> None:
+    sys.path.insert(0, str(Path("plugins/omics-analysis/scripts")))
+    from common.registry import load_skill_registry
+
+    entry = load_skill_registry()["skills"]["single-cell-preprocess"]
+    assert entry["layer"] == "task"
+    assert entry["domain"] == "single_cell"
+    assert entry["backends"] == ["scanpy", "anndata"]
+    assert entry["public_entrypoint"] is True
+    assert "preprocess" in entry["router_keywords"]
+    assert entry["approval"]["required_for_execution"] is True
 
 
 def test_migrated_alias_skills_are_removed() -> None:

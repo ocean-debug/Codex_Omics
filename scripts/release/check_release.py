@@ -25,6 +25,9 @@ REQUIRED_PLUGIN_FILES = {
     "skills/single-cell-rna-qc/SKILL.md",
     "skills/single-cell-rna-qc/scripts/check_environment.py",
     "skills/single-cell-rna-qc/scripts/qc_analysis.py",
+    "skills/single-cell-preprocess/SKILL.md",
+    "skills/single-cell-preprocess/scripts/check_environment.py",
+    "skills/single-cell-preprocess/scripts/run.py",
     "skills/scvi-tools/SKILL.md",
     "skills/scvi-tools/scripts/check_environment.py",
     "skills/scvi-tools/scripts/train_model.py",
@@ -42,6 +45,7 @@ P0_HELP_SCRIPTS = [
     "plugins/omics-analysis/skills/omics-router/scripts/route_omics.py",
     "plugins/omics-analysis/skills/omics-report/scripts/render_report.py",
     "plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py",
+    "plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py",
     "plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py",
     "plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py",
 ]

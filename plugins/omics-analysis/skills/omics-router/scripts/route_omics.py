@@ -49,6 +49,9 @@ def route_request(prompt: str, input_path: Path, outdir: Path) -> dict[str, Any]
     elif skill == "single-cell-rna-qc":
         env = inspect_scrna_qc_environment()
         plan = scrna_qc_plan(input_path, outdir)
+    elif skill == "single-cell-preprocess":
+        env = inspect_scrna_qc_environment()
+        plan = scrna_preprocess_plan(input_path, outdir)
     elif skill == "nextflow-development":
         env = inspect_nextflow_environment()
         plan = nextflow_plan(input_path, outdir, prompt_l)
@@ -98,6 +101,7 @@ def detect_intents(prompt: str) -> list[str]:
     intent_tokens = {
         "model_training": ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "train", "latent", "batch correction", "label transfer"],
         "quality_control": ["qc", "quality control", "filter", "mitochondrial"],
+        "single_cell_preprocessing": ["preprocess", "preprocessing", "normalize", "normalization", "log1p", "hvg", "pca", "neighbors", "umap", "leiden", "clustering"],
         "nextflow_workflow": ["nextflow", "nf-core", "rnaseq", "scrnaseq", "riboseq", "spatialvi", "atacseq", "sarek", "fastq"],
         "reporting": ["report", "manifest", "methods", "interpret"],
         "skill_authoring": ["new skill", "add workflow", "bulk-rna-de", "go-enrichment", "cellchat", "grn", "author skill"],
@@ -128,6 +132,8 @@ def score_candidates(prompt: str, inventory: dict[str, Any], registry: dict[str,
         score = len(keyword_hits) * 3 + len(input_hits) * 2
         if skill_id == "single-cell-rna-qc" and {"h5ad", "tenx_h5", "tenx_mtx"}.intersection(observed_formats):
             score += 4
+        if skill_id == "single-cell-preprocess" and "h5ad" in observed_formats and any(token in prompt for token in ["preprocess", "normalization", "normalize", "log1p", "hvg", "pca", "umap", "leiden", "clustering"]):
+            score += 4
         if skill_id == "nextflow-development" and "fastq" in observed_formats:
             score += 4
         if skill_id == "scvi-tools" and "h5ad" in observed_formats and any(token in prompt for token in ["scvi", "scanvi", "totalvi", "peakvi", "multivi", "batch", "latent"]):
@@ -143,6 +149,12 @@ def score_candidates(prompt: str, inventory: dict[str, Any], registry: dict[str,
                 "environment_readiness": "not_checked_until_selected",
                 "approval_required": bool(entry.get("approval", {}).get("required_for_execution", False)),
                 "known_task_support": entry.get("tasks", []),
+                "layer": entry.get("layer", "task"),
+                "domain": entry.get("domain", "infrastructure"),
+                "maturity": entry.get("maturity", "experimental"),
+                "public_entrypoint": bool(entry.get("public_entrypoint", True)),
+                "backends": entry.get("backends", []),
+                "composes": entry.get("composes", []),
                 "matched_keywords": keyword_hits[:10],
                 "matched_input_formats": input_hits,
             }
@@ -201,6 +213,19 @@ def scrna_qc_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
             f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input {quote_arg(input_path)} --output-dir {quote_arg(qc_out)} --dry-run --json",
         ],
         "approved_command": f"python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --input {quote_arg(input_path)} --output-dir {quote_arg(qc_out)} --approved true --write-manifest",
+    }
+
+
+def scrna_preprocess_plan(input_path: Path, outdir: Path) -> dict[str, Any]:
+    preprocess_out = outdir / "single_cell_preprocess"
+    return {
+        "approval_required": True,
+        "commands": [
+            "python plugins/omics-analysis/skills/single-cell-preprocess/scripts/check_environment.py --json",
+            f"python plugins/omics-analysis/skills/single-cell-preprocess/scripts/validate_input.py --input {quote_arg(input_path)} --json",
+            f"python plugins/omics-analysis/skills/single-cell-preprocess/scripts/plan.py --input {quote_arg(input_path)} --output-dir {quote_arg(preprocess_out)} --dry-run --json",
+        ],
+        "approved_command": f"python plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py --input {quote_arg(input_path)} --output-dir {quote_arg(preprocess_out)} --approved true --write-manifest",
     }
 
 
@@ -274,6 +299,7 @@ def quote_arg(value: str | Path) -> str:
 def requirements_for(skill: str) -> list[str]:
     return {
         "single-cell-rna-qc": ["scanpy", "anndata", "numpy", "scipy", "pandas", "matplotlib", "seaborn"],
+        "single-cell-preprocess": ["scanpy", "anndata", "numpy", "scipy", "pandas"],
         "scvi-tools": ["scvi-tools", "torch", "scanpy", "anndata", "GPU optional but recommended"],
         "nextflow-development": ["Java 17+", "Nextflow", "nf-core", "git", "Singularity/Apptainer or Docker"],
     }.get(skill, [])

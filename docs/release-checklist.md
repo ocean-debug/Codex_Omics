@@ -5,6 +5,7 @@ Before release:
 ```bash
 python -m compileall -q plugins scripts tests
 python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py --help
+python plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py --help
 python plugins/omics-analysis/skills/scvi-tools/scripts/recommend_model.py --help
 python plugins/omics-analysis/skills/scvi-tools/scripts/train_model.py --help
 python plugins/omics-analysis/skills/nextflow-development/scripts/build_nextflow_command.py --help

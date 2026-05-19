@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0",
+  "skill": "single-cell-preprocess",
+  "status": "planned",
+  "inputs": {
+    "path": "replace_me_filtered.h5ad"
+  },
+  "outputs": {
+    "preprocessed_h5ad": "results/single_cell_preprocess/preprocessed.h5ad",
+    "summary": "results/single_cell_preprocess/preprocess_summary.json",
+    "manifest": "results/single_cell_preprocess/run_manifest.json",
+    "report": "results/single_cell_preprocess/report.md"
+  },
+  "parameters": {
+    "target_sum": 10000,
+    "hvg_flavor": "seurat",
+    "n_top_genes": 2000,
+    "scale_max_value": 10,
+    "n_pcs": 50,
+    "n_neighbors": 15,
+    "resolution": 1.0,
+    "random_state": 0
+  }
+}

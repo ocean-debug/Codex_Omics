@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-preprocess config",
+  "type": "object",
+  "properties": {
+    "target_sum": {"type": "number"},
+    "hvg_flavor": {"type": "string"},
+    "n_top_genes": {"type": "integer"},
+    "scale_max_value": {"type": "number"},
+    "n_pcs": {"type": "integer"},
+    "n_neighbors": {"type": "integer"},
+    "resolution": {"type": "number"},
+    "random_state": {"type": "integer"}
+  }
+}

@@ -27,6 +27,17 @@ python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py -
 
 Reports include raw-count source checks, filtering summaries, and batch-aware counts when a `batch` column is present.
 
+## single-cell-preprocess
+
+```bash
+python plugins/omics-analysis/skills/single-cell-preprocess/scripts/check_environment.py --json
+python plugins/omics-analysis/skills/single-cell-preprocess/scripts/validate_input.py --input filtered.h5ad --json
+python plugins/omics-analysis/skills/single-cell-preprocess/scripts/plan.py --input filtered.h5ad --output-dir results/preprocess --dry-run --json
+python plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py --input filtered.h5ad --output-dir results/preprocess --approved true --write-manifest
+```
+
+This skill keeps QC separate from preprocessing. It writes `preprocessed.h5ad`, `preprocess_summary.json`, `run_manifest.json`, and `report.md`.
+
 ## scvi-tools
 
 ```bash

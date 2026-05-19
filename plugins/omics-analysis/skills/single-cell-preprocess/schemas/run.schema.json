@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-preprocess run manifest",
+  "type": "object",
+  "required": ["schema_version", "run_id", "skill", "status", "inputs", "outputs", "parameters"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "run_id": {"type": "string"},
+    "skill": {"type": "string"},
+    "status": {"type": "string"},
+    "inputs": {"type": "object"},
+    "outputs": {"type": "object"},
+    "parameters": {"type": "object"},
+    "summary": {"type": "object"},
+    "warnings": {"type": "array"},
+    "errors": {"type": "array"}
+  }
+}

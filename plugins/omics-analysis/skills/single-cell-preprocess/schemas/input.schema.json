@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "single-cell-preprocess input",
+  "type": "object",
+  "required": ["input"],
+  "properties": {
+    "input": {"type": "string", "description": "Path to filtered h5ad input."},
+    "output_dir": {"type": "string"},
+    "target_sum": {"type": "number"},
+    "hvg_flavor": {"type": "string", "enum": ["seurat", "cell_ranger", "seurat_v3"]},
+    "n_top_genes": {"type": "integer"},
+    "n_pcs": {"type": "integer"},
+    "n_neighbors": {"type": "integer"},
+    "resolution": {"type": "number"},
+    "random_state": {"type": "integer"}
+  }
+}

@@ -20,6 +20,12 @@ def load_skill_registry(path: str | Path | None = None) -> dict[str, Any]:
         if not isinstance(entry, dict):
             raise TypeError(f"Registry entry for {skill_id} must be an object")
         entry.setdefault("skill_id", skill_id)
+        entry.setdefault("layer", "task")
+        entry.setdefault("domain", "infrastructure")
+        entry.setdefault("backends", [])
+        entry.setdefault("composes", [])
+        entry.setdefault("public_entrypoint", True)
+        entry.setdefault("maturity", "experimental")
         entry.setdefault("tasks", [])
         entry.setdefault("input_formats", [])
         entry.setdefault("constraints", [])

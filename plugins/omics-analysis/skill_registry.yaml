@@ -2,6 +2,12 @@ schema_version: "1.0"
 skills:
   omics-router:
     skill_id: "omics-router"
+    layer: "system"
+    domain: "infrastructure"
+    backends: []
+    composes: []
+    public_entrypoint: true
+    maturity: "validated"
     tasks: ["route_request", "inspect_input", "build_router_plan"]
     input_formats: ["prompt", "directory", "file"]
     constraints: ["plugin_local_only", "plan_only", "explainable_decision"]
@@ -23,6 +29,12 @@ skills:
     workflow_diagram: "skills/omics-router/references/workflow.md"
   nextflow-development:
     skill_id: "nextflow-development"
+    layer: "tool_family"
+    domain: "multiomics"
+    backends: ["nextflow", "nf-core"]
+    composes: []
+    public_entrypoint: true
+    maturity: "validated"
     tasks: ["nfcore_workflow", "samplesheet", "nextflow_command", "approved_execution", "multiqc_summary"]
     input_formats: ["fastq", "samplesheet", "metadata_csv", "reference_fasta", "reference_gtf", "nextflow_config"]
     constraints: ["dry_run_default", "approval_required", "no_dependency_install"]
@@ -50,6 +62,12 @@ skills:
     workflow_diagram: "skills/nextflow-development/references/workflow.md"
   scvi-tools:
     skill_id: "scvi-tools"
+    layer: "tool_family"
+    domain: "single_cell"
+    backends: ["scvi-tools", "torch"]
+    composes: []
+    public_entrypoint: true
+    maturity: "validated"
     tasks: ["model_recommendation", "validate_anndata", "train_scvi_model", "latent_embedding", "training_diagnostics"]
     input_formats: ["h5ad", "anndata"]
     constraints: ["dry_run_default", "approval_required", "no_dependency_install"]
@@ -76,6 +94,12 @@ skills:
     workflow_diagram: "skills/scvi-tools/references/workflow.md"
   single-cell-rna-qc:
     skill_id: "single-cell-rna-qc"
+    layer: "task"
+    domain: "single_cell"
+    backends: ["scanpy", "anndata"]
+    composes: []
+    public_entrypoint: true
+    maturity: "validated"
     tasks: ["scrna_qc", "validate_counts", "filter_cells", "qc_plots"]
     input_formats: ["h5ad", "tenx_h5", "tenx_mtx"]
     constraints: ["dry_run_default", "approval_required", "no_in_place_mutation"]
@@ -99,8 +123,47 @@ skills:
     examples: ["skills/single-cell-rna-qc/examples/minimal.json"]
     router_keywords: ["qc", "quality control", "h5ad", "10x", "mitochondrial", "filtering", "scrna"]
     workflow_diagram: "skills/single-cell-rna-qc/references/workflow.md"
+  single-cell-preprocess:
+    skill_id: "single-cell-preprocess"
+    layer: "task"
+    domain: "single_cell"
+    backends: ["scanpy", "anndata"]
+    composes: []
+    public_entrypoint: true
+    maturity: "experimental"
+    tasks: ["normalize_log1p", "highly_variable_genes", "pca_neighbors_umap_leiden", "preprocess_h5ad"]
+    input_formats: ["h5ad"]
+    constraints: ["dry_run_default", "approval_required", "no_in_place_mutation"]
+    scripts:
+      check_environment: "skills/single-cell-preprocess/scripts/check_environment.py"
+      validate_input: "skills/single-cell-preprocess/scripts/validate_input.py"
+      plan: "skills/single-cell-preprocess/scripts/plan.py"
+      run: "skills/single-cell-preprocess/scripts/run.py"
+      summarize: "skills/single-cell-preprocess/scripts/summarize.py"
+    schemas:
+      input: "skills/single-cell-preprocess/schemas/input.schema.json"
+      config: "skills/single-cell-preprocess/schemas/config.schema.json"
+      output: "skills/single-cell-preprocess/schemas/output.schema.json"
+      run: "skills/single-cell-preprocess/schemas/run.schema.json"
+    outputs: ["preprocessed.h5ad", "preprocess_summary.json", "run_manifest.json", "report.md"]
+    approval:
+      required_for_execution: true
+      default_mode: "dry-run"
+      approved_flag: "--approved true"
+    reporting:
+      manifest_required: true
+      sections: ["Analysis Overview", "Input Data Summary", "Environment and Dependencies", "Methods and Parameters", "Results and QC Interpretation", "Warnings / Failures / Suggested Fixes", "Reproducibility Appendix"]
+    examples: ["skills/single-cell-preprocess/examples/demo_config.yaml", "skills/single-cell-preprocess/examples/expected_manifest.json"]
+    router_keywords: ["preprocess", "preprocessing", "normalize", "normalization", "log1p", "hvg", "highly variable", "pca", "neighbors", "umap", "leiden", "clustering"]
+    workflow_diagram: "skills/single-cell-preprocess/references/workflow.md"
   omics-report:
     skill_id: "omics-report"
+    layer: "system"
+    domain: "reporting"
+    backends: []
+    composes: []
+    public_entrypoint: true
+    maturity: "validated"
     tasks: ["render_report", "summarize_manifest", "methods_text"]
     input_formats: ["run_manifest_json", "report_md"]
     constraints: ["read_only_inputs", "report_generation"]
@@ -122,6 +185,12 @@ skills:
     workflow_diagram: "skills/omics-report/references/workflow.md"
   skill-authoring-kit:
     skill_id: "skill-authoring-kit"
+    layer: "system"
+    domain: "infrastructure"
+    backends: []
+    composes: []
+    public_entrypoint: true
+    maturity: "validated"
     tasks: ["create_skill", "extend_plugin", "author_workflow", "add_analysis_skill"]
     input_formats: ["requirements", "workflow_plan"]
     constraints: ["plugin_local_only", "no_backend_cli", "tests_required"]

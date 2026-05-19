@@ -125,6 +125,16 @@ def key_results(manifest: dict[str, Any]) -> list[str]:
             f"- Counts source: `{summary.get('counts_source', summary.get('counts_layer', 'unknown'))}`",
             f"- Filter mode: `{summary.get('filter_mode', 'unknown')}`",
         ]
+    if skill == "single-cell-preprocess":
+        after = summary.get("after", summary if isinstance(summary, dict) else {})
+        return [
+            f"- Cells: `{after.get('n_cells', 'unknown')}`",
+            f"- Genes: `{after.get('n_genes', 'unknown')}`",
+            f"- Highly variable genes: `{after.get('n_hvg', 'unknown')}`",
+            f"- PCA available: `{after.get('has_pca', 'unknown')}`",
+            f"- UMAP available: `{after.get('has_umap', 'unknown')}`",
+            f"- Leiden clusters: `{after.get('leiden_clusters', 'unknown')}`",
+        ]
     if skill == "scvi-tools":
         return [
             f"- Model: `{summary.get('model', manifest.get('parameters', {}).get('model', 'unknown'))}`",

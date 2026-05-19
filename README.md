@@ -1,8 +1,8 @@
 # Codex-Omics
 
 Codex-Omics is a Codex plugin for reproducible omics analysis. It provides
-plugin-local skills for single-cell QC, scvi-tools workflows, nf-core/Nextflow
-planning, routing, reporting, and skill authoring.
+plugin-local skills for single-cell QC/preprocessing, scvi-tools workflows,
+nf-core/Nextflow planning, routing, reporting, and skill authoring.
 
 The plugin is the product: load `plugins/omics-analysis/` in Codex and use the
 bundled `SKILL.md` files plus local scripts. There is no backend CLI
@@ -14,6 +14,7 @@ requirement.
 |---|---|
 | `omics-router` | Choose the right skill from user intent, input inventory, constraints, and registered capabilities. |
 | `single-cell-rna-qc` | Validate `.h5ad` or 10x inputs, plan/run QC, write filtered AnnData, plots, manifest, and report. |
+| `single-cell-preprocess` | Normalize/log-transform filtered `.h5ad`, mark HVGs, build PCA/neighbors/UMAP/Leiden, and write a preprocessed AnnData plus report. |
 | `scvi-tools` | Recommend SCVI/SCANVI/TOTALVI/PEAKVI/MULTIVI, validate AnnData, plan/train approved models, record diagnostics. |
 | `nextflow-development` | Generate nf-core samplesheets, build `command.sh` and `params.yaml`, parse MultiQC, run only after approval. |
 | `omics-report` | Render seven-section Markdown reports from run manifests. |
@@ -22,6 +23,22 @@ requirement.
 Skills are registered in `plugins/omics-analysis/skill_registry.yaml`, so the
 router and release checks can discover scripts, schemas, outputs, approval
 rules, examples, and workflow diagrams.
+
+## Skill Architecture
+
+Codex-Omics keeps skill directories flat and records hierarchy in the registry:
+
+| Layer | Purpose | Current examples |
+|---|---|---|
+| `system` | Routing, reporting, authoring, and safety infrastructure. | `omics-router`, `omics-report`, `skill-authoring-kit` |
+| `task` | User-facing analysis tasks with stable inputs and outputs. | `single-cell-rna-qc`, `single-cell-preprocess` |
+| `tool_family` | Adapters for complex tool ecosystems used by task skills. | `scvi-tools`, `nextflow-development` |
+| `workflow` | Plan and compose multiple skills into an end-to-end workflow. | planned |
+
+Task skills answer **what to do**, tool-family skills answer **what to use**,
+and workflow skills answer **how to chain steps**. New skills should stay in
+`skills/<skill-id>/` and declare `layer`, `domain`, `backends`, `composes`,
+`public_entrypoint`, and `maturity` in `skill_registry.yaml`.
 
 ## Quick Start
 
@@ -56,6 +73,13 @@ Run skill scripts in the same pattern:
 python plugins/omics-analysis/skills/single-cell-rna-qc/scripts/qc_analysis.py \
   --input cells.h5ad \
   --output-dir results/qc \
+  --dry-run \
+  --json
+
+# Plan single-cell preprocessing after QC
+python plugins/omics-analysis/skills/single-cell-preprocess/scripts/run.py \
+  --input results/qc/filtered.h5ad \
+  --output-dir results/preprocess \
   --dry-run \
   --json
 
@@ -100,6 +124,10 @@ To add another nf-core workflow, start from:
 plugins/omics-analysis/skills/nextflow-development/references/nfcore-workflow-adapter-template.md
 ```
 
+For a new non-nf-core analysis capability, create a task-level skill first.
+Create a tool-family skill only when multiple task skills need the same complex
+backend. Create a workflow skill only when composing existing skills.
+
 ## Safety Model
 
 Codex-Omics is plan-first.
@@ -120,7 +148,7 @@ Analysis runtimes are provided by the user environment and checked per skill:
 
 | Area | Typical requirements |
 |---|---|
-| single-cell QC | `scanpy`, `anndata`, `numpy`, `scipy`, `pandas`, plotting libraries |
+| single-cell QC/preprocess | `scanpy`, `anndata`, `numpy`, `scipy`, `pandas`, plotting libraries for QC |
 | scvi-tools | `scvi-tools`, `torch`, `scanpy`, `anndata`, optional GPU |
 | Nextflow/nf-core | Java 17+, Nextflow, nf-core, git, Singularity/Apptainer or Docker |
 
@@ -143,6 +171,15 @@ overall_status: ok
 ```
 
 See `docs/acceptance-matrix.md` and `docs/remote-validation.md` for details.
+
+Additional `single-cell-preprocess` validation completed on `gpu03` on
+2026-05-19:
+
+```text
+result: /home/hywang/codex/codex_omics/data/test/result/single_cell_preprocess_skill_20260519/
+pytest: 47 passed in 43.13s
+overall_status: ok
+```
 
 ## Repository Layout
 

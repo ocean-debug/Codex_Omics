@@ -28,6 +28,9 @@ plugins/omics-analysis/skills/<new-skill>/
 - Scripts must run from the plugin package without installing this repository as a Python package.
 - Scripts may import `plugins/omics-analysis/scripts/common/`.
 - Scripts must not import the removed backend package.
+- Keep skill directories flat under `plugins/omics-analysis/skills/<skill-id>/`; express hierarchy in `skill_registry.yaml`.
+- Register `layer`, `domain`, `backends`, `composes`, `public_entrypoint`, and `maturity` for every new skill.
+- Prefer task-level skills for user-facing analysis capabilities. Use tool-family skills only as reusable adapters, and workflow skills only for composition.
 - Default to dry-run/planned behavior.
 - Require `--approved true` for long-running execution, installation, downloads, or destructive actions.
 - Write `run_manifest.json` and `report.md` when possible.
